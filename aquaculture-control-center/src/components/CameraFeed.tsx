@@ -5,51 +5,144 @@ interface CameraFeedProps {
   cameraId: number;
 }
 
-// 模拟摄像头数据生成
-// API替换指南：
-// 1. 实时图像流：WebSocket连接 ws://api-server/camera-feed/:id
-// 2. 快照接口：GET /api/cameras/:id/snapshot
-// 3. 摄像头状态：GET /api/cameras/:id/status
-const generateMockCameraData = (cameraId: number) => {
-  const locations = [
-    '主养殖区东北角',
-    '投食区中心位置',
-    '过滤设备附近',
-    '南侧水体监控',
-    '应急备用区域'
-  ];
-  
-  const status = Math.random() > 0.9 ? '离线' : '在线';
-  const quality = Math.random() > 0.8 ? '低' : Math.random() > 0.5 ? '中' : '高';
-  
-  return {
-    id: cameraId,
-    name: `监控摄像头-${cameraId}`,
-    location: locations[cameraId - 1],
-    status,
-    quality,
-    resolution: '1920x1080',
-    fps: status === '在线' ? Math.floor(Math.random() * 30) + 10 : 0,
-    lastUpdate: new Date().toLocaleTimeString('ja-JP', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
-    })
-  };
+interface CameraData {
+  id: number;
+  name: string;
+  location: string;
+  status: string;
+  quality: string;
+  resolution: string;
+  fps: number;
+  lastUpdate: number;
+  lastUpdateTime: string;
+  temperature: number | null;
+  connectivity: number;
+  recording: boolean;
+  nightVision: boolean;
+  motionDetection: boolean;
+}
+
+// 生成摄像头数据 - 从API获取真实数据
+const generateMockCameraData = async (cameraId: number): Promise<CameraData> => {
+  try {
+    // 调用本地API获取摄像头状态数据
+    const response = await fetch(`http://8.216.33.92:5002/api/cameras/${cameraId}/status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(5000), // 5秒超时
+    });
+
+    if (!response.ok) {
+      throw new Error(`API请求失败: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      // 将API数据转换为前端需要的格式
+      const apiData = result.data;
+      return {
+        id: apiData.id,
+        name: apiData.name,
+        location: apiData.location,
+        status: apiData.status,
+        quality: apiData.quality,
+        resolution: apiData.resolution,
+        fps: apiData.fps,
+        lastUpdate: apiData.lastUpdate,
+        lastUpdateTime: apiData.lastUpdateTime,
+        temperature: apiData.temperature,
+        connectivity: apiData.connectivity,
+        recording: apiData.recording,
+        nightVision: apiData.nightVision,
+        motionDetection: apiData.motionDetection
+      };
+    } else {
+      throw new Error('API返回数据格式错误');
+    }
+  } catch (error) {
+    console.warn('API调用失败，使用备用数据:', error);
+    
+    // 备用数据生成逻辑（保持原有的模拟数据逻辑）
+    const locations = [
+      '主养殖区东北角',
+      '投食区中心位置', 
+      '过滤设备附近',
+      '南侧水体监控',
+      '应急备用区域',
+      '北侧深水区',
+      '中央监控点',
+      '西侧浅水区'
+    ];
+    
+    const statuses = ['在线', '离线'];
+    const qualities = ['高', '中', '低'];
+    
+    const isOnline = Math.random() > 0.1; // 90%在线率
+    const status = isOnline ? '在线' : '离线';
+    const quality = qualities[Math.floor(Math.random() * qualities.length)];
+    
+    return {
+      id: cameraId,
+      name: `监控摄像头-${cameraId}`,
+      location: locations[(cameraId - 1) % locations.length],
+      status: status,
+      quality: quality,
+      resolution: '1920x1080',
+      fps: isOnline ? Math.floor(Math.random() * 21) + 10 : 0, // 10-30 fps
+      lastUpdate: Date.now(),
+      lastUpdateTime: new Date().toLocaleTimeString(),
+      temperature: isOnline ? 22.0 + (Math.random() - 0.5) * 6 : null,
+      connectivity: isOnline ? Math.floor(Math.random() * 16) + 85 : 0, // 85-100%
+      recording: isOnline && Math.random() > 0.2,
+      nightVision: Math.random() > 0.5,
+      motionDetection: isOnline && Math.random() > 0.3
+    };
+  }
 };
 
 const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
-  const [cameraData, setCameraData] = useState(() => generateMockCameraData(cameraId));
+  const [cameraData, setCameraData] = useState<CameraData | null>(null);
   const [imageError, setImageError] = useState(false);
+
+  // 初始化数据加载
+  useEffect(() => {
+    const loadCameraData = async () => {
+      try {
+        const data = await generateMockCameraData(cameraId);
+        setCameraData(data);
+      } catch (error) {
+        console.error('加载摄像头数据失败:', error);
+      }
+    };
+    
+    loadCameraData();
+  }, [cameraId]);
 
   // 模拟数据更新
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCameraData(generateMockCameraData(cameraId));
+    const interval = setInterval(async () => {
+      try {
+        const data = await generateMockCameraData(cameraId);
+        setCameraData(data);
+      } catch (error) {
+        console.error('更新摄像头数据失败:', error);
+      }
     }, 5000 + Math.random() * 5000); // 5-10秒间隔更新
 
     return () => clearInterval(interval);
   }, [cameraId]);
+
+  // 如果数据还未加载，显示加载状态
+  if (!cameraData) {
+    return (
+      <div className="camera-feed loading">
+        <div className="loading-text">加载摄像头数据中...</div>
+      </div>
+    );
+  }
 
   // 模拟图像数据（使用Canvas生成模拟水下的景象）
   const generateMockImage = () => {
@@ -138,7 +231,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
           <div className="offline-display">
             <div className="offline-icon">⚠️</div>
             <div className="offline-text">摄像头离线</div>
-            <div className="offline-time">最后在线: {cameraData.lastUpdate}</div>
+            <div className="offline-time">最后在线: {cameraData.lastUpdateTime}</div>
           </div>
         )}
       </div>
@@ -148,7 +241,7 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
         <div className="tech-info">
           <span className="resolution">{cameraData.resolution}</span>
           <span className="separator">|</span>
-          <span className="update-time">{cameraData.lastUpdate}</span>
+          <span className="update-time">{cameraData.lastUpdateTime}</span>
         </div>
       </div>
     </div>

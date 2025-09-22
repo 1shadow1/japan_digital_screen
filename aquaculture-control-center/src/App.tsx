@@ -28,14 +28,40 @@ function App() {
 
   // 模拟实时数据更新
   useEffect(() => {
-    const updateData = () => {
-      setSensorData(generateMockSensorData(sensorTypes));
-      setAiMessages(prev => {
-        const newMessages = generateMockAIMessages();
-        return [...prev, ...newMessages].slice(-50); // 保持最新50条消息
+    const updateData = async () => {
+      try {
+        // 异步调用传感器数据API
+        const newSensorData = await generateMockSensorData(sensorTypes);
+        setSensorData(newSensorData);
+      } catch (error) {
+        console.error('更新传感器数据失败:', error);
+      }
+      
+      // 异步调用AI消息API
+      generateMockAIMessages().then(newMessages => {
+        setAiMessages(prev => {
+          return [...prev, ...newMessages].slice(-50); // 保持最新50条消息
+        });
+      }).catch(error => {
+        console.error('更新AI消息失败:', error);
       });
-      setDeviceStatus(generateMockDeviceStatus());
-      setLocationData(generateMockLocationData());
+      
+      // 异步调用设备状态API
+      generateMockDeviceStatus().then(newDeviceStatus => {
+        setDeviceStatus(Array.isArray(newDeviceStatus) ? newDeviceStatus : []);
+      }).catch(error => {
+        console.error('更新设备状态失败:', error);
+        setDeviceStatus([]); // 确保在错误情况下也设置为空数组
+      });
+      
+      // 异步调用地理位置数据API
+      generateMockLocationData().then(newLocationData => {
+        setLocationData(Array.isArray(newLocationData) ? newLocationData : []);
+      }).catch(error => {
+        console.error('更新地理位置数据失败:', error);
+        setLocationData([]); // 确保在错误情况下也设置为空数组
+      });
+      
       setCurrentTime(new Date());
     };
 
