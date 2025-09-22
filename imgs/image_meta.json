@@ -1,0 +1,288 @@
+[
+  {
+    "query": "Sci-fi style UI elements with blue glowing effects for dashboard",
+    "image_info": {
+      "url": "https://static.vecteezy.com/system/resources/previews/005/549/958/non_2x/sci-fi-digital-high-tech-collection-in-glowing-hud-elements-interface-hologram-portal-of-science-futuristic-technology-magic-warp-gate-in-game-fantasy-teleport-podium-gui-ui-virtual-reality-users-vector.jpg",
+      "file_path": "/workspace/imgs/futuristic_sci_fi_holographic_blue_ui_elements.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 63728,
+      "width": 1745,
+      "height": 980,
+      "total_pixels": 1710100,
+      "basic_score": 0.8191515751724248
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 95.0,
+      "clarity_score": 90.0,
+      "watermark_score": 100.0,
+      "overall_score": 90.0,
+      "explanation": "The image perfectly matches the search query and prompt, depicting futuristic, sci-fi UI elements with a distinct blue and purple holographic glow. The clarity is excellent, and there are no watermarks. The composition is clean and professional, making it highly suitable for dashboard designs.",
+      "file_name": "futuristic_sci_fi_holographic_blue_ui_elements.jpg",
+      "caption": "Three futuristic circular user interface (UI) elements with vibrant blue and purple holographic glowing effects, illuminated on a dark, ambient background. These abstract digital components are designed in a sci-fi style, ideal for technological dashboards, virtual reality interfaces, or advanced display systems.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "Real fish pond monitoring camera view for surveillance display",
+    "image_info": {
+      "url": "https://www.aquaculturenorthamerica.com/wp-content/uploads/2020/08/SeaSight-Control-Onscreen.jpg",
+      "file_path": "/workspace/imgs/aquaculture_fish_farm_monitoring_camera_system_display.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 51473,
+      "width": 650,
+      "height": 502,
+      "total_pixels": 326300,
+      "basic_score": 0.7974065291413855
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 100.0,
+      "clarity_score": 90.0,
+      "watermark_score": 100.0,
+      "overall_score": 95.0,
+      "explanation": "The image is an excellent match for both the search query and prompt, directly depicting a real fish farm monitoring system with underwater and surface camera views. The image clarity is high, allowing for clear discernment of details on the monitor screen. There are no external watermarks, and the composition is professional.",
+      "file_name": "aquaculture_fish_farm_monitoring_camera_system_display.jpg",
+      "caption": "A computer monitor displays a sophisticated multi-camera surveillance interface for an aquaculture fish farm. The screen is divided into four feeds: two dynamic underwater views showing fish (likely salmon or trout) with detection overlays and environmental data like temperature (7.3°C) and depth (9.3m), alongside two surface perspectives of large circular fish farming pens. The left panel of the interface provides controls for camera, winch, zoom, and focus, while the bottom bar features the 'Gael Force Group SeaSight Control' branding, highlighting a dedicated system for real-time fish farm monitoring and management.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "Real fish pond monitoring camera view for surveillance display",
+    "image_info": {
+      "url": "https://cdn.shortpixel.ai/spai/w_963+q_glossy+ret_img+to_webp/scaleaq.com/wp-content/uploads/2021/08/Orbit-HD-Fixed-release-version_web.jpg",
+      "file_path": "/workspace/imgs/aquaculture_underwater_camera_monitoring_fish_pond_surveillance.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 799608,
+      "width": 1800,
+      "height": 1125,
+      "total_pixels": 2025000,
+      "basic_score": 0.7614861611568017
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 95.0,
+      "clarity_score": 98.0,
+      "watermark_score": 100.0,
+      "overall_score": 95.0,
+      "explanation": "The image is highly relevant, clearly depicting an underwater monitoring camera surrounded by fish, which perfectly matches the search query and prompt about fish pond aquaculture camera monitoring and surveillance. It boasts excellent clarity, professional composition, and is free of watermarks, making it an ideal visual for its intended purpose.",
+      "file_name": "aquaculture_underwater_camera_monitoring_fish_pond_surveillance.jpg",
+      "caption": "An immersive underwater view featuring a black, spherical monitoring camera or sensor with a clear dome, suspended by white ropes. It is surrounded by a dense school of fish in deep blue water, with prominent light rays penetrating from the surface. This scene effectively illustrates a high-tech aquaculture or fish pond surveillance system.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "Real fish pond monitoring camera view for surveillance display",
+    "image_info": {
+      "url": "https://cdn.shortpixel.ai/spai/w_963+q_glossy+ret_img+to_webp/scaleaq.com/wp-content/uploads/2023/08/Orbit3910-2-1024x640.jpg",
+      "file_path": "/workspace/imgs/underwater_fish_aquaculture_monitoring_camera.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 145160,
+      "width": 1024,
+      "height": 640,
+      "total_pixels": 655360,
+      "basic_score": 0.8964063948863911
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 95.0,
+      "clarity_score": 98.0,
+      "watermark_score": 100.0,
+      "overall_score": 95.0,
+      "explanation": "The image is highly relevant, perfectly illustrating an underwater monitoring camera amidst a large school of fish, aligning well with the 'aquaculture camera monitoring view underwater' search query and the prompt. Clarity is excellent, with no watermarks. The composition is strong, and the overall professional quality is high, effectively conveying the concept of aquatic surveillance.",
+      "file_name": "underwater_fish_aquaculture_monitoring_camera.jpg",
+      "caption": "An advanced underwater monitoring camera, resembling a small ROV (Remotely Operated Vehicle) or submersible, captures footage of a dense school of fish in a clear blue aquatic environment. Sunlight rays pierce through the water from above, illuminating the scene, suggesting a shallow depth or clear water conditions typical of an aquaculture farm or large fish pond. The camera is centrally positioned, offering a dynamic perspective of the aquatic surveillance setup.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "Real fish pond monitoring camera view for surveillance display",
+    "image_info": {
+      "url": "https://www.innovasea.com/wp-content/uploads/2023/08/camera_webbanner_web.jpg",
+      "file_path": "/workspace/imgs/underwater_aquaculture_camera_monitoring_fish_view.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 72624,
+      "width": 1600,
+      "height": 987,
+      "total_pixels": 1579200,
+      "basic_score": 0.851985388154577
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 92.0,
+      "clarity_score": 95.0,
+      "watermark_score": 60.0,
+      "overall_score": 88.0,
+      "explanation": "The image is highly relevant to the search query and prompt, depicting an underwater camera in an aquaculture setting, clearly monitoring a school of fish. Its clarity, composition, and lighting are excellent, making it a professional-grade visual. The primary reduction in score is due to the visible 'INNOVASEA' brand logo on the camera, which acts as a prominent watermark or branding.",
+      "file_name": "underwater_aquaculture_camera_monitoring_fish_view.jpg",
+      "caption": "An underwater surveillance camera, branded 'INNOVASEA', positioned to monitor a large school of fish, likely in an aquaculture or fish farming environment. The scene captures the clear blue-green water and numerous fish swimming in the background, illustrating a real-time monitoring view for aquaculture display.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "Digital grid pattern background for technology dashboard",
+    "image_info": {
+      "url": "https://img.freepik.com/premium-vector/hud-grid-radar-mesh-digital-dashboard-backdrop_8071-36741.jpg",
+      "file_path": "/workspace/imgs/digital_blue_grid_pattern_technology_background.jpg",
+      "img_format": "AVIF",
+      "mode": "RGB",
+      "file_size": 12742,
+      "width": 626,
+      "height": 626,
+      "total_pixels": 391876,
+      "basic_score": 0.8197170017291575
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 98.0,
+      "clarity_score": 100.0,
+      "watermark_score": 100.0,
+      "overall_score": 97.0,
+      "explanation": "The image perfectly matches the search query and prompt, featuring a clear digital grid pattern on a blue background, ideal for a technology dashboard. It exhibits excellent clarity, professional composition, and is free of watermarks.",
+      "file_name": "digital_blue_grid_pattern_technology_background.jpg",
+      "caption": "A futuristic dark blue background featuring a bright white digital grid pattern with subtle dots at intersections. The design includes 'L' shaped corner markers and a central crosshair, creating an aesthetic reminiscent of a high-tech user interface, data display, or cyber-security dashboard. The clean, crisp lines and gradient blue hues make it an ideal background for technology-themed applications and presentations.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "Digital grid pattern background for technology dashboard",
+    "image_info": {
+      "url": "https://images.stockcake.com/public/c/e/8/ce853954-6e44-4e7a-ad81-8a267525e193_large/glowing-circuit-matrix-stockcake.jpg",
+      "file_path": "/workspace/imgs/cyber_blue_digital_grid_technology_background.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 70634,
+      "width": 512,
+      "height": 512,
+      "total_pixels": 262144,
+      "basic_score": 0.7788993604530304
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 98.0,
+      "clarity_score": 95.0,
+      "watermark_score": 100.0,
+      "overall_score": 97.0,
+      "explanation": "The image is an excellent match for the search query and prompt, featuring a prominent blue digital grid pattern suitable for a technology dashboard background. It is clear, high-resolution, and free of watermarks, making it a high-quality asset.",
+      "file_name": "cyber_blue_digital_grid_technology_background.jpg",
+      "caption": "An abstract, high-resolution image featuring a glowing blue digital grid pattern on a dark background, resembling a circuit board or futuristic network. Bright blue lines intersect with illuminated dots, creating a dynamic and intricate design that symbolizes data flow, connectivity, artificial intelligence, and advanced technology. Ideal as a background for a technology dashboard, banner, or any digital-themed design.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "Digital grid pattern background for technology dashboard",
+    "image_info": {
+      "url": "https://static.vecteezy.com/system/resources/previews/067/763/040/non_2x/futuristic-tech-grid-with-blue-digital-mesh-abstract-hud-interface-features-wireframe-pattern-crosslines-and-virtual-data-sci-fi-template-with-cyber-ui-elements-and-modern-infographic-style-vector.jpg",
+      "file_path": "/workspace/imgs/digital_cyber_blue_grid_technology_background.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 85953,
+      "width": 1920,
+      "height": 923,
+      "total_pixels": 1772160,
+      "basic_score": 0.779379805842234
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 100.0,
+      "clarity_score": 100.0,
+      "watermark_score": 100.0,
+      "overall_score": 100.0,
+      "explanation": "The image perfectly aligns with the search query and prompt, showcasing a high-quality, crisp, and professional digital grid pattern. Its 'cyber blue' color scheme and technical elements make it an ideal background for technology dashboards and related applications. There are no watermarks or clarity issues.",
+      "file_name": "digital_cyber_blue_grid_technology_background.jpg",
+      "caption": "A futuristic dark blue background featuring an intricate bright blue grid pattern, accentuated with subtle darker squares, small luminous dots, and delicate crosshairs. This modern and professional design is ideal for digital dashboards, technology interfaces, and cyber-themed backgrounds.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "A dark blue oceanic background suitable for aquaculture monitoring dashboard",
+    "image_info": {
+      "url": "https://media.istockphoto.com/id/1147616069/photo/sea-fish-farm.jpg?s=612x612&w=0&k=20&c=1SCMfSlfqT40W5GvKNOUNyXRmjM5G3bSytqnrRQPzDM=",
+      "file_path": "/workspace/imgs/underwater_aquaculture_fish_farm_dark_blue_ocean.jpg",
+      "img_format": "JPEG",
+      "mode": "RGB",
+      "file_size": 37790,
+      "width": 612,
+      "height": 439,
+      "total_pixels": 268668,
+      "basic_score": 0.774135704377112
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 95.0,
+      "clarity_score": 88.0,
+      "watermark_score": 100.0,
+      "overall_score": 92.0,
+      "explanation": "The image is highly relevant, perfectly depicting an underwater aquaculture fish farming cage with a dark blue ocean background, fitting the 'monitor background' and 'ocean theme' aspects of the query and prompt. The clarity is excellent for an underwater shot, and there are no watermarks. The composition is strong, making it ideal for a dashboard background.",
+      "file_name": "underwater_aquaculture_fish_farm_dark_blue_ocean.jpg",
+      "caption": "An immersive underwater view of a large aquaculture fish farming cage teeming with a dense school of fish. Sunlight filters from the surface, illuminating a diver observing the marine life within the dark blue ocean depths, creating a suitable background for an aquaculture monitoring dashboard.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "A dark blue oceanic background suitable for aquaculture monitoring dashboard",
+    "image_info": {
+      "url": "https://www.aquaculturealliance.org/wp-content/uploads/2019/04/Nesar_blue-dimensions-1500-960x487.jpg",
+      "file_path": "/workspace/imgs/dark-blue-ocean-waves-aquaculture-dashboard-background.jpg",
+      "img_format": "WEBP",
+      "mode": "RGB",
+      "file_size": 30372,
+      "width": 960,
+      "height": 487,
+      "total_pixels": 467520,
+      "basic_score": 0.8388922489618912
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 90.0,
+      "clarity_score": 95.0,
+      "watermark_score": 100.0,
+      "overall_score": 95.0,
+      "explanation": "The image perfectly captures a 'dark blue oceanic theme' suitable as a background. Its abstract yet realistic depiction of ocean waves with a pleasing depth of field makes it highly relevant and visually appealing for a monitoring dashboard, even without direct aquaculture elements. Clarity and composition are excellent, and there are no watermarks.",
+      "file_name": "dark-blue-ocean-waves-aquaculture-dashboard-background.jpg",
+      "caption": "A close-up view of the dark blue ocean surface, featuring gentle, undulating waves. The foreground waves are in sharp focus, while the background recedes into a soft blur with faint light reflections, creating a serene and immersive oceanic theme suitable for digital dashboards, particularly for aquaculture monitoring.",
+      "recommend": true,
+      "error": ""
+    }
+  },
+  {
+    "query": "A dark blue oceanic background suitable for aquaculture monitoring dashboard",
+    "image_info": {
+      "url": "https://img.freepik.com/premium-photo/coastal-fish-farm-ocean-aquaculture-fish-farming-many-fish-net-pens-sustainable-seafood-production_204719-172736.jpg",
+      "file_path": "/workspace/imgs/aquaculture_fish_farming_ocean_pens.jpg",
+      "img_format": "AVIF",
+      "mode": "RGB",
+      "file_size": 128246,
+      "width": 626,
+      "height": 626,
+      "total_pixels": 391876,
+      "basic_score": 0.8342663862166532
+    },
+    "llm_score": {
+      "success": true,
+      "relevance_score": 85.0,
+      "clarity_score": 95.0,
+      "watermark_score": 100.0,
+      "overall_score": 80.0,
+      "explanation": "The image is highly relevant to aquaculture and fish farming with an oceanic theme. It boasts excellent clarity and vibrant colors, and is free of watermarks. However, its busyness with many fish and nets, along with varied lighting, makes it less ideal as a 'dark blue' and 'unobtrusive background' for a dashboard where data legibility is key. It functions better as a hero image than a subtle background.",
+      "file_name": "aquaculture_fish_farming_ocean_pens.jpg",
+      "caption": "An aerial view of multiple circular fish farming pens floating on a clear, vibrant blue-green ocean. A large school of silvery fish is visible within one of the netted enclosures, while several individual fish swim freely in the surrounding water. The netting and floating structures are clearly visible, showcasing a bustling aquaculture operation under bright daylight.",
+      "recommend": true,
+      "error": ""
+    }
+  }
+]

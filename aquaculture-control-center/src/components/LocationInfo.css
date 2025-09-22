@@ -1,0 +1,357 @@
+/* ===========================
+ * 地理位置信息组件样式
+ * =========================== */
+.location-info {
+  background: linear-gradient(135deg, rgba(0, 31, 63, 0.95) 0%, rgba(0, 51, 102, 0.9) 100%);
+  border: 1px solid rgba(0, 168, 204, 0.4);
+  border-radius: 12px;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 地理位置头部 */
+.location-header {
+  margin-bottom: 1rem;
+}
+
+.location-header .section-title {
+  margin-bottom: 0.8rem;
+}
+
+.region-overview {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.region-stat {
+  background: rgba(0, 51, 102, 0.6);
+  border: 1px solid rgba(0, 168, 204, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.region-stat:hover {
+  border-color: rgba(0, 168, 204, 0.6);
+  transform: translateY(-2px);
+}
+
+.region-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #41b3d3;
+  margin-bottom: 0.3rem;
+  text-shadow: 0 0 8px rgba(65, 179, 211, 0.6);
+}
+
+.region-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.metric {
+  font-size: 0.7rem;
+  color: #20B2AA;
+  opacity: 0.9;
+}
+
+/* 控制面板 */
+.location-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.region-filter, .sort-options {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.region-filter label, .sort-options label {
+  font-size: 0.8rem;
+  color: #20B2AA;
+  white-space: nowrap;
+}
+
+.region-select, .sort-select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(65, 179, 211, 0.4);
+  background: rgba(0, 31, 63, 0.8);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  min-width: 100px;
+  transition: all 0.3s ease;
+}
+
+.region-select:focus, .sort-select:focus {
+  outline: none;
+  border-color: #41b3d3;
+  box-shadow: 0 0 8px rgba(65, 179, 211, 0.3);
+}
+
+.region-select option, .sort-select option {
+  background: rgba(0, 31, 63, 0.95);
+  color: white;
+}
+
+/* 位置列表 */
+.location-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(65, 179, 211, 0.5) transparent;
+}
+
+.location-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.location-list::-webkit-scrollbar-track {
+  background: rgba(0, 31, 63, 0.3);
+  border-radius: 3px;
+}
+
+.location-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #00a8cc, #41b3d3);
+  border-radius: 3px;
+}
+
+/* 位置项 */
+.location-item {
+  background: linear-gradient(135deg, rgba(0, 51, 102, 0.6) 0%, rgba(0, 31, 63, 0.8) 100%);
+  border: 1px solid rgba(0, 168, 204, 0.3);
+  border-radius: 10px;
+  padding: 0.8rem;
+  margin-bottom: 0.8rem;
+  position: relative;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  overflow: hidden;
+}
+
+.location-item:hover {
+  border-color: rgba(0, 168, 204, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 168, 204, 0.2);
+}
+
+/* 位置主信息 */
+.location-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+.location-identity {
+  flex: 1;
+}
+
+.location-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 0.3rem 0;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.location-region {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  background: rgba(32, 178, 170, 0.2);
+  border: 1px solid rgba(32, 178, 170, 0.4);
+  border-radius: 12px;
+  font-size: 0.7rem;
+  color: #20B2AA;
+  font-weight: 600;
+}
+
+.location-status {
+  display: flex;
+  align-items: center;
+}
+
+.location-status .status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 31, 63, 0.6);
+  border: 1px solid rgba(65, 179, 211, 0.3);
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+
+.status-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* 位置详细信息 */
+.location-details {
+  margin-bottom: 0.8rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: rgba(0, 31, 63, 0.6);
+  border-radius: 6px;
+  border: 1px solid rgba(65, 179, 211, 0.2);
+  font-size: 0.8rem;
+}
+
+.detail-label {
+  color: #20B2AA;
+  opacity: 0.9;
+}
+
+.detail-value {
+  color: #ffffff;
+  font-weight: 600;
+  font-family: 'Monaco', 'Consolas', monospace;
+}
+
+/* 坐标信息 */
+.coordinates-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(32, 178, 170, 0.1);
+  border: 1px solid rgba(32, 178, 170, 0.2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.coordinates-label {
+  color: #20B2AA;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.coordinates-value {
+  color: #ffffff;
+  font-family: 'Monaco', 'Consolas', monospace;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  text-align: right;
+}
+
+.coordinates-value:hover {
+  color: #20B2AA;
+  text-shadow: 0 0 8px rgba(32, 178, 170, 0.6);
+}
+
+/* 状态指示条 */
+.location-status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 51, 102, 0.5);
+  overflow: hidden;
+}
+
+.location-status-bar .status-fill {
+  height: 100%;
+  width: 100%;
+  animation: locationFlow 4s ease-in-out infinite;
+}
+
+@keyframes locationFlow {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(0); }
+}
+
+/* 地理位置特效 */
+.location-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(32, 178, 170, 0.1) 50%,
+    transparent 100%
+  );
+  animation: locationScan 6s ease-in-out infinite;
+}
+
+@keyframes locationScan {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .region-overview {
+    justify-content: center;
+  }
+  
+  .location-controls {
+    flex-direction: column;
+    gap: 0.8rem;
+    align-items: stretch;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .region-stat {
+    min-width: 60px;
+    padding: 0.3rem 0.5rem;
+  }
+  
+  .region-name {
+    font-size: 0.8rem;
+  }
+  
+  .metric {
+    font-size: 0.65rem;
+  }
+  
+  .coordinates-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+  
+  .coordinates-value {
+    text-align: left;
+  }
+}

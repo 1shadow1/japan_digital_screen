@@ -1,0 +1,285 @@
+/* ===========================
+ * AI决策聊天组件样式
+ * =========================== */
+.ai-decision-chat {
+  background: linear-gradient(135deg, rgba(0, 31, 63, 0.95) 0%, rgba(0, 51, 102, 0.9) 100%);
+  border: 1px solid rgba(0, 168, 204, 0.4);
+  border-radius: 12px;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* AI头部 */
+.ai-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(65, 179, 211, 0.3);
+}
+
+.ai-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-icon {
+  font-size: 1.5rem;
+  animation: aiPulse 3s ease-in-out infinite;
+}
+
+@keyframes aiPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.ai-title h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #41b3d3;
+  margin: 0;
+  text-shadow: 0 0 10px rgba(65, 179, 211, 0.7);
+}
+
+.ai-status .status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.8rem;
+  background: rgba(32, 178, 170, 0.2);
+  border: 1px solid rgba(32, 178, 170, 0.4);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: #20B2AA;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #20B2AA;
+  border-radius: 50%;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { 
+    opacity: 1;
+    box-shadow: 0 0 5px #20B2AA;
+  }
+  50% { 
+    opacity: 0.5;
+    box-shadow: 0 0 15px #20B2AA, 0 0 25px rgba(32, 178, 170, 0.5);
+  }
+}
+
+/* 消息容器 */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(65, 179, 211, 0.5) transparent;
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: rgba(0, 31, 63, 0.3);
+  border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #00a8cc, #41b3d3);
+  border-radius: 3px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #41b3d3, #20B2AA);
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* 无消息状态 */
+.no-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #41b3d3;
+  opacity: 0.8;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(65, 179, 211, 0.3);
+  border-top: 3px solid #41b3d3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 消息项 */
+.message-item {
+  background: linear-gradient(135deg, rgba(0, 51, 102, 0.6) 0%, rgba(0, 31, 63, 0.8) 100%);
+  border-radius: 10px;
+  padding: 0.8rem;
+  position: relative;
+  border-left: 3px solid transparent;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.message-item:hover {
+  background: linear-gradient(135deg, rgba(0, 51, 102, 0.8) 0%, rgba(0, 31, 63, 0.9) 100%);
+  transform: translateX(5px);
+}
+
+.message-item.analysis {
+  border-left-color: #00a8cc;
+}
+
+.message-item.warning {
+  border-left-color: #ff6b35;
+}
+
+.message-item.action {
+  border-left-color: #20B2AA;
+}
+
+.message-item.optimization {
+  border-left-color: #41b3d3;
+}
+
+/* 消息头部 */
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.message-type {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.type-icon {
+  font-size: 1rem;
+}
+
+.type-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #41b3d3;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  color: #20B2AA;
+  font-family: 'Monaco', 'Consolas', monospace;
+  opacity: 0.8;
+}
+
+/* 消息内容 */
+.message-content {
+  color: #ffffff;
+  line-height: 1.4;
+}
+
+.message-text {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.action-taken {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(32, 178, 170, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(32, 178, 170, 0.2);
+}
+
+.action-icon {
+  color: #20B2AA;
+  font-size: 0.9rem;
+  margin-top: 0.1rem;
+}
+
+.action-text {
+  font-size: 0.8rem;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+.action-text strong {
+  color: #20B2AA;
+}
+
+/* 消息边框效果 */
+.message-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  border-radius: 0 0 0 10px;
+}
+
+/* AI底部统计 */
+.ai-footer {
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(65, 179, 211, 0.3);
+}
+
+.ai-stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #20B2AA;
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  font-family: 'Monaco', 'Consolas', monospace;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
