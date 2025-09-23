@@ -103,44 +103,138 @@ const generateMockCameraData = async (cameraId: number): Promise<CameraData> => 
   }
 };
 
+/**
+ * 从API获取摄像头图片
+ * @param cameraId 摄像头ID
+ * @returns Promise<string> 图片URL或错误信息
+ */
+const fetchCameraImage = async (cameraId: number): Promise<string> => {
+  try {
+    const response = await fetch(`http://localhost:5002/api/cameras/${cameraId}/image`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(8000), // 8秒超时，图片加载需要更长时间
+    });
+
+    if (!response.ok) {
+      if (response.status === 503) {
+        throw new Error('摄像头离线');
+      }
+      throw new Error(`获取图片失败: ${response.status}`);
+    }
+
+    // 将响应转换为Blob，然后创建本地URL
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+    
+  } catch (error) {
+    console.warn(`摄像头 ${cameraId} 图片获取失败:`, error);
+    throw error;
+  }
+};
+
 const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
   const [cameraData, setCameraData] = useState<CameraData | null>(null);
-  const [imageError, setImageError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  // 加载摄像头数据
+  const loadCameraData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await generateMockCameraData(cameraId);
+      setCameraData(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '加载摄像头数据失败');
+      console.error('加载摄像头数据失败:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 加载摄像头图片
+  const loadCameraImage = async () => {
+    if (!cameraData || cameraData.status !== '在线') {
+      setImageUrl(null);
+      setImageError('摄像头离线');
+      return;
+    }
+
+    try {
+      setImageLoading(true);
+      setImageError(null);
+      
+      // 清理之前的URL以避免内存泄漏
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+      
+      const newImageUrl = await fetchCameraImage(cameraId);
+      setImageUrl(newImageUrl);
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : '加载图片失败');
+      console.error('加载摄像头图片失败:', err);
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   // 初始化数据加载
   useEffect(() => {
-    const loadCameraData = async () => {
-      try {
-        const data = await generateMockCameraData(cameraId);
-        setCameraData(data);
-      } catch (error) {
-        console.error('加载摄像头数据失败:', error);
-      }
-    };
-    
     loadCameraData();
   }, [cameraId]);
 
-  // 模拟数据更新
+  // 当摄像头数据更新后，加载图片
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const data = await generateMockCameraData(cameraId);
-        setCameraData(data);
-      } catch (error) {
-        console.error('更新摄像头数据失败:', error);
-      }
-    // }, 5000 + Math.random() * 5000); // 5-10秒间隔更新
-    }, 3600000); // 每3600秒更新一次
+    if (cameraData) {
+      loadCameraImage();
+    }
+  }, [cameraData]);
+
+  // 定时更新数据和图片（每30秒）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadCameraData();
+    }, 30000); // 30秒更新一次
 
     return () => clearInterval(interval);
   }, [cameraId]);
 
+  // 组件卸载时清理URL
+  useEffect(() => {
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [imageUrl]);
+
   // 如果数据还未加载，显示加载状态
-  if (!cameraData) {
+  if (loading) {
     return (
       <div className="camera-feed loading">
-        <div className="loading-text">加载摄像头数据中...</div>
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>正在加载摄像头数据...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果加载出错，显示错误信息
+  if (error || !cameraData) {
+    return (
+      <div className="camera-feed error">
+        <div className="error-message">
+          <h3>⚠️ 加载失败</h3>
+          <p>{error || '无法获取摄像头数据'}</p>
+          <button onClick={loadCameraData} className="retry-button">
+            重试
+          </button>
+        </div>
       </div>
     );
   }
@@ -202,39 +296,77 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
 
       {/* 图像显示区域 */}
       <div className="camera-display">
-        {cameraData.status === '在线' ? (
-          <div className="image-container">
-            {!imageError ? (
-              <img
-                src={mockImageUrl}
-                alt={`摄像头 ${cameraId} 实时画面`}
-                onError={() => setImageError(true)}
-                className="camera-image"
-              />
-            ) : (
-              <div className="image-placeholder">
-                <div className="placeholder-icon">📷</div>
-                <div className="placeholder-text">正在加载...</div>
-              </div>
-            )}
-            {/* 实时数据叠加层 */}
-            <div className="camera-overlay">
-              <div className="recording-indicator">
-                <div className="recording-dot"></div>
-                <span>REC</span>
-              </div>
-              <div className="camera-params">
-                <div className="param">{cameraData.quality} | {cameraData.fps}fps</div>
+        <div className="image-container">
+          {cameraData.status === '在线' ? (
+            <div className="image-wrapper">
+              {imageLoading && (
+                <div className="image-loading-overlay">
+                  <div className="spinner"></div>
+                  <p>正在加载图片...</p>
+                </div>
+              )}
+              
+              {imageError && !imageLoading && (
+                <div className="image-error-overlay">
+                  <div className="error-content">
+                    <span className="error-icon">📷</span>
+                    <p>{imageError}</p>
+                    <button 
+                      onClick={loadCameraImage} 
+                      className="retry-image-button"
+                    >
+                      重新加载图片
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {imageUrl && !imageError && (
+                <img
+                  src={imageUrl}
+                  alt={`摄像头 ${cameraId} 实时画面`}
+                  className="camera-image"
+                  onError={() => {
+                    setImageError('图片加载失败');
+                    console.error('图片显示错误');
+                  }}
+                  onLoad={() => {
+                    console.log('图片加载成功');
+                  }}
+                />
+              )}
+              
+              {/* 实时数据叠加层 */}
+              <div className="overlay-info">
+                <div className="overlay-item">
+                  <span className="label">温度:</span>
+                  <span className="value">
+                    {cameraData.temperature ? `${cameraData.temperature.toFixed(1)}°C` : 'N/A'}
+                  </span>
+                </div>
+                <div className="overlay-item">
+                  <span className="label">连接:</span>
+                  <span className="value">{cameraData.connectivity}%</span>
+                </div>
+                <div className="overlay-item">
+                  <span className="label">FPS:</span>
+                  <span className="value">{cameraData.fps}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="offline-display">
-            <div className="offline-icon">⚠️</div>
-            <div className="offline-text">摄像头离线</div>
-            <div className="offline-time">最后在线: {cameraData.lastUpdateTime}</div>
-          </div>
-        )}
+          ) : (
+            <div className="offline-placeholder">
+              <div className="offline-content">
+                <span className="offline-icon">📷</span>
+                <h3>摄像头离线</h3>
+                <p>设备当前不可用</p>
+                <button onClick={loadCameraData} className="reconnect-button">
+                  尝试重连
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 技术参数 */}
