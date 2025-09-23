@@ -64,7 +64,7 @@ const getCameraData = async (cameraId: number): Promise<CameraData> => {
 };
 
 /**
- * 从API获取摄像头图片
+ * 从API获取摄像头图片URL
  * @param cameraId 摄像头ID
  * @returns Promise<string> 图片URL或错误信息
  */
@@ -72,6 +72,9 @@ const fetchCameraImage = async (cameraId: number): Promise<string> => {
   try {
     const response = await fetch(`http://localhost:5002/api/cameras/${cameraId}/image`, {
       method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       signal: AbortSignal.timeout(8000), // 8秒超时，图片加载需要更长时间
     });
 
@@ -82,9 +85,16 @@ const fetchCameraImage = async (cameraId: number): Promise<string> => {
       throw new Error(`获取图片失败: ${response.status}`);
     }
 
-    // 将响应转换为Blob，然后创建本地URL
-    const blob = await response.blob();
-    return URL.createObjectURL(blob);
+    // 解析JSON响应
+    const result = await response.json();
+    
+    if (result.success && result.data && result.data.imageUrl) {
+      console.log('摄像头图片API调用成功:', result);
+      // 直接返回API提供的图片URL
+      return result.data.imageUrl;
+    } else {
+      throw new Error('API返回数据格式错误或缺少imageUrl');
+    }
     
   } catch (error) {
     console.warn(`摄像头 ${cameraId} 图片获取失败:`, error);
@@ -127,8 +137,8 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
       setImageLoading(true);
       setImageError(null);
       
-      // 清理之前的URL以避免内存泄漏
-      if (imageUrl) {
+      // 清理之前的URL（只有当它是ObjectURL时才需要revoke）
+      if (imageUrl && imageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(imageUrl);
       }
       
@@ -163,10 +173,10 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
     return () => clearInterval(interval);
   }, [cameraId]);
 
-  // 组件卸载时清理URL
+  // 组件卸载时清理URL（只清理ObjectURL）
   useEffect(() => {
     return () => {
-      if (imageUrl) {
+      if (imageUrl && imageUrl.startsWith('blob:')) {
         URL.revokeObjectURL(imageUrl);
       }
     };
