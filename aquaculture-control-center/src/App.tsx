@@ -40,7 +40,7 @@ function App() {
       // 异步调用AI消息API
       generateMockAIMessages().then(newMessages => {
         setAiMessages(prev => {
-          return [...prev, ...newMessages].slice(-50); // 保持最新50条消息
+          return [...prev, ...newMessages].slice(-10); // 保持最新50条消息
         });
       }).catch(error => {
         console.error('更新AI消息失败:', error);
@@ -69,7 +69,7 @@ function App() {
     updateData();
     
     // 定期更新数据
-    const interval = setInterval(updateData, 3000); // 每3秒更新一次
+    const interval = setInterval(updateData, 3600000); // 每3600秒更新一次
     
     return () => clearInterval(interval);
   }, []);

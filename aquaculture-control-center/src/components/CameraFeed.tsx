@@ -130,7 +130,8 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
       } catch (error) {
         console.error('更新摄像头数据失败:', error);
       }
-    }, 5000 + Math.random() * 5000); // 5-10秒间隔更新
+    // }, 5000 + Math.random() * 5000); // 5-10秒间隔更新
+    }, 3600000); // 每3600秒更新一次
 
     return () => clearInterval(interval);
   }, [cameraId]);
