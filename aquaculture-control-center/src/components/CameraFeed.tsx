@@ -25,7 +25,7 @@ interface CameraData {
 // 从API获取摄像头数据
 const getCameraData = async (cameraId: number): Promise<CameraData> => {
   // 调用本地API获取摄像头状态数据
-  const response = await fetch(`http://localhost:5002/api/cameras/${cameraId}/status`, {
+  const response = await fetch(`http://8.216.33.92:5002/api/cameras/${cameraId}/status`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ const getCameraData = async (cameraId: number): Promise<CameraData> => {
  */
 const fetchCameraImage = async (cameraId: number): Promise<string> => {
   try {
-    const response = await fetch(`http://localhost:5002/api/cameras/${cameraId}/image`, {
+    const response = await fetch(`http://8.216.33.92:5002/api/cameras/${cameraId}/image`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
