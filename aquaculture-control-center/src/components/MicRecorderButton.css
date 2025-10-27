@@ -1,0 +1,74 @@
+/* 右下角悬浮按钮容器 */
+.mic-fab-container {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* 圆形悬浮按钮 */
+.mic-fab {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 168, 204, 0.6);
+  background: radial-gradient(circle at 30% 30%, rgba(0,168,204,0.8), rgba(0,31,63,0.9));
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3), 0 0 12px rgba(0,168,204,0.5);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.mic-fab:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 168, 204, 0.9);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 16px rgba(0,168,204,0.7);
+}
+
+.mic-fab.recording {
+  background: radial-gradient(circle at 30% 30%, rgba(255,107,53,0.85), rgba(31,0,0,0.9));
+  border-color: rgba(255,107,53,0.9);
+  animation: micPulse 1.3s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 8px 20px rgba(255,107,53,0.25), 0 0 14px rgba(255,107,53,0.6); }
+  50% { box-shadow: 0 8px 22px rgba(255,107,53,0.35), 0 0 22px rgba(255,107,53,0.85); }
+}
+
+.mic-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 0 6px rgba(0,0,0,0.4));
+}
+
+/* 右下角轻提示 */
+.mic-toast {
+  max-width: 260px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(65, 179, 211, 0.4);
+  background: rgba(0, 31, 63, 0.85);
+  color: #cfefff;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  backdrop-filter: blur(8px);
+}
+
+.mic-toast.error {
+  border-color: rgba(255, 107, 53, 0.6);
+  color: #ffd6cc;
+  background: rgba(63, 0, 0, 0.75);
+}
+
+.mic-toast.status {
+  border-color: rgba(65, 179, 211, 0.5);
+}

@@ -32,6 +32,21 @@
 - **多场地管理**：支持多个养殖场地的统一管理
 - **地理信息展示**：直观的地理位置和环境信息展示
 
+### 🎤 语音输入（ASR）
+- 右下角悬浮麦克风按钮：点击开始录音，再次点击停止并发送音频
+- 实时识别（WebSocket）：配置 `VITE_ASR_WS_URL` 后自动启用；首帧发送 `start`（包含 `mimeType` 等），中间持续发送二进制音频分片，结束发送 `end`
+- 文件上传（HTTP）：配置 `VITE_ASR_UPLOAD_URL` 时作为兜底，在停止录音后将整段音频通过 `multipart/form-data` 上传
+- 支持的音频编码：优先 `audio/webm;codecs=opus`，其次 `audio/webm`、`audio/ogg;codecs=opus`、`audio/ogg`（浏览器兼容性自动选择）
+- 权限与安全：需要用户允许麦克风权限；建议在 `https` 或 `localhost` 环境访问
+- 跨域与代理：请确保后端已允许 CORS/WS 跨域，或在 `vite.config.ts` 中配置代理
+- 协议对齐：如需鉴权或自定义 `start/end/心跳/分片封装`，请告知服务端协议，我将快速调整前端实现
+
+使用步骤：
+1. 在 `.env.development` 或 `.env` 中配置 `VITE_ASR_WS_URL` 或 `VITE_ASR_UPLOAD_URL`
+2. 启动开发服务器 `npm run dev`
+3. 打开页面，点击右下角麦克风按钮并允许权限
+4. 说话几秒后再次点击停止，查看发送和识别结果提示
+
 ## 🛠️ 技术栈
 
 - **前端框架**：React 18 + TypeScript
@@ -106,6 +121,7 @@ aquaculture-control-center/
 │   │   ├── DeviceStatus.tsx      # 设备状态组件
 │   │   ├── LocationInfo.tsx      # 位置信息组件
 │   │   ├── SensorChart.tsx       # 传感器图表组件
+│   │   ├── MicRecorderButton.tsx # 悬浮麦克风录音按钮（语音输入/ASR）
 │   │   └── ErrorBoundary.tsx     # 错误边界组件
 │   ├── hooks/              # 自定义 Hooks
 │   ├── lib/                # 工具库
@@ -129,6 +145,19 @@ aquaculture-control-center/
 - `BUILD_MODE`: 构建模式（dev/prod）
 - `VITE_API_BASE_URL`: API 基础地址
 - `VITE_WS_URL`: WebSocket 连接地址
+- `VITE_ASR_WS_URL`: ASR 实时识别 WebSocket 地址（优先使用，实时流式发送音频分片）
+- `VITE_ASR_UPLOAD_URL`: ASR 音频文件上传 HTTP 地址（兜底方案，停止录音后整段上传）
+
+示例（在项目根目录创建 `.env.development` 或 `.env`）：
+
+```bash
+# ASR 实时识别（WebSocket）
+VITE_ASR_WS_URL=ws://your-asr-server/ws
+
+# ASR 文件上传（HTTP，作为兜底）
+VITE_ASR_UPLOAD_URL=http://your-asr-server/upload
+```
+
 
 ### 传感器配置
 

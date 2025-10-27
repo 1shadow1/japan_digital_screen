@@ -6,6 +6,7 @@ import DeviceStatus from './components/DeviceStatus';
 import LocationInfo from './components/LocationInfo';
 import { generateMockSensorData, generateMockAIMessages, generateMockDeviceStatus, generateMockLocationData } from './utils/mockData';
 import './App.css';
+import MicRecorderButton from './components/MicRecorderButton';
 
 function App() {
   const [sensorData, setSensorData] = useState<any>({});
@@ -132,6 +133,9 @@ function App() {
           </section>
         </div>
       </main>
+
+      {/* 右下角悬浮麦克风按钮 */}
+      <MicRecorderButton />
     </div>
   );
 }
