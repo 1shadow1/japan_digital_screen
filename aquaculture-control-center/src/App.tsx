@@ -20,11 +20,9 @@ function App() {
     { id: 'temperature', name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] as [number, number] },
     { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] as [number, number] },
     { id: 'oxygen', name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] as [number, number] },
-    { id: 'ammonia', name: '氨氮', unit: 'mg/L', color: '#40E0D0', threshold: [0, 0.5] as [number, number] },
-    { id: 'nitrite', name: '亚硝酸盐', unit: 'mg/L', color: '#0080b8', threshold: [0, 0.1] as [number, number] },
-    { id: 'light', name: '光照强度', unit: 'lux', color: '#006994', threshold: [1000, 5000] as [number, number] },
+    { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] as [number, number] },
     { id: 'level', name: '水位', unit: 'm', color: '#00a8cc', threshold: [1.5, 3.0] as [number, number] },
-    { id: 'flow', name: '流量', unit: 'L/min', color: '#41b3d3', threshold: [50, 200] as [number, number] }
+    
   ];
 
   // 模拟实时数据更新

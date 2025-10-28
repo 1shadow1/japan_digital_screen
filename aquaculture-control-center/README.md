@@ -9,7 +9,7 @@
 ## ✨ 主要功能
 
 ### 📊 实时数据监控
-- **多参数传感器监控**：水温、pH值、溶解氧、氨氮、亚硝酸盐、光照强度、水位、流量
+- **多参数传感器监控**：水温、pH值、溶解氧、浊度（NTU）、水位
 - **实时图表展示**：动态更新的数据图表，支持历史数据查看
 - **阈值报警**：自动检测参数异常并提供预警
 
@@ -167,6 +167,7 @@ VITE_ASR_UPLOAD_URL=http://your-asr-server/upload
 const sensorTypes = [
   { id: 'temperature', name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] },
   { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] },
+  { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] },
   // ... 更多传感器配置
 ];
 ```
