@@ -1,138 +1,150 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import './MicRecorderButton.css'
 
-// 环境变量配置（可在 .env.[mode] 中配置）
-const WS_URL = import.meta.env.VITE_ASR_WS_URL as string | undefined
-const UPLOAD_URL = import.meta.env.VITE_ASR_UPLOAD_URL as string | undefined
-
-// 发送模式：优先 WebSocket 实时；若未配置，则在停止后通过 HTTP 上传整段音频
-const getMode = () => (WS_URL ? 'ws' : (UPLOAD_URL ? 'http' : 'none')) as 'ws' | 'http' | 'none'
-
-const preferredMimeTypes = [
-  'audio/webm;codecs=opus',
-  'audio/webm',
-  'audio/ogg;codecs=opus',
-  'audio/ogg',
-]
-
-const pickSupportedMimeType = () => {
-  for (const type of preferredMimeTypes) {
-    if ((window as any).MediaRecorder && MediaRecorder.isTypeSupported?.(type)) {
-      return type
-    }
-  }
-  return '' // 让浏览器自己选择
+interface Props {
+  onPartial?: (text: string) => void
+  onFinal?: (text: string) => void
 }
 
-const MicRecorderButton: React.FC = () => {
+// 目标采样率与分片大小（200ms @16kHz -> 3200 samples）
+const TARGET_RATE = 16000
+const PACKET_SAMPLES = 3200
+
+// 环境变量配置（可在 .env.[mode] 中配置）
+const ENV_WS_URL = import.meta.env.VITE_ASR_WS_URL as string | undefined
+const defaultWsUrl = (() => {
+  try {
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://'
+    return proto + location.host + '/ws-asr'
+  } catch {
+    return undefined
+  }
+})()
+const WS_URL = ENV_WS_URL || defaultWsUrl
+
+const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal }) => {
   const [isRecording, setIsRecording] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
   const [status, setStatus] = useState<string>('')
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const mediaStreamRef = useRef<MediaStream | null>(null)
-  const wsRef = useRef<WebSocket | null>(null)
-  const chunksRef = useRef<Blob[]>([])
-  const modeRef = useRef(getMode())
 
-  useEffect(() => {
-    modeRef.current = getMode()
-  })
+  const wsRef = useRef<WebSocket | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
+  const processorRef = useRef<ScriptProcessorNode | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const srcRateRef = useRef<number>(TARGET_RATE)
+  const resampledQueueRef = useRef<number[]>([])
 
   const cleanup = useCallback(() => {
-    try {
-      mediaRecorderRef.current?.stop()
-    } catch {}
-    mediaRecorderRef.current = null
-
-    try {
-      mediaStreamRef.current?.getTracks().forEach(t => t.stop())
-    } catch {}
-    mediaStreamRef.current = null
-
+    try { processorRef.current?.disconnect(); processorRef.current && (processorRef.current.onaudioprocess = null as any) } catch {}
+    processorRef.current = null
+    try { sourceRef.current?.disconnect() } catch {}
+    sourceRef.current = null
+    try { audioCtxRef.current?.close() } catch {}
+    audioCtxRef.current = null
+    try { streamRef.current?.getTracks().forEach(t => t.stop()) } catch {}
+    streamRef.current = null
     try {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        // 发送结束标记，具体协议可按后端调整
-        try { wsRef.current.send(JSON.stringify({ type: 'end' })) } catch {}
+        try { wsRef.current.send(JSON.stringify({ event: 'end' })) } catch {}
       }
       wsRef.current?.close()
     } catch {}
     wsRef.current = null
-
-    chunksRef.current = []
+    resampledQueueRef.current = []
     setStatus('')
   }, [])
 
+  const connectWS = useCallback(() => {
+    if (!WS_URL) {
+      setPermissionError('未配置 VITE_ASR_WS_URL，且无法推断默认地址。')
+      return null
+    }
+    const ws = new WebSocket(WS_URL)
+    ws.binaryType = 'arraybuffer'
+    ws.onopen = () => setStatus('WebSocket 已连接')
+    ws.onerror = () => setStatus('WebSocket 连接错误')
+    ws.onclose = () => setStatus('WebSocket 已关闭')
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data as string)
+        if (msg.type === 'result') {
+          if (msg.final) {
+            onFinal?.(msg.text || '')
+          } else {
+            onPartial?.(msg.text || '')
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    wsRef.current = ws
+    return ws
+  }, [onFinal, onPartial])
+
+  const resampleTo16k = (src: Float32Array, srcRate: number) => {
+    if (srcRate === TARGET_RATE) return src
+    const factor = TARGET_RATE / srcRate
+    const destLen = Math.round(src.length * factor)
+    const dest = new Float32Array(destLen)
+    for (let i = 0; i < destLen; i++) {
+      const t = i / factor
+      const j = Math.floor(t)
+      const k = Math.min(j + 1, src.length - 1)
+      const frac = t - j
+      dest[i] = src[j] + (src[k] - src[j]) * frac
+    }
+    return dest
+  }
+
+  const appendResampled = (arr: Float32Array) => {
+    for (let i = 0; i < arr.length; i++) resampledQueueRef.current.push(arr[i])
+  }
+
+  const flushSegments = () => {
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+    const q = resampledQueueRef.current
+    while (q.length >= PACKET_SAMPLES) {
+      const segment = q.splice(0, PACKET_SAMPLES)
+      const pcm16 = new Int16Array(PACKET_SAMPLES)
+      for (let i = 0; i < PACKET_SAMPLES; i++) {
+        const s = Math.max(-1, Math.min(1, segment[i] || 0))
+        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
+      }
+      try { ws.send(pcm16.buffer) } catch { break }
+    }
+  }
+
   const startRecording = useCallback(async () => {
     setPermissionError(null)
-    const mode = modeRef.current
-    if (mode === 'none') {
-      setPermissionError('未配置音频发送地址，请设置 VITE_ASR_WS_URL 或 VITE_ASR_UPLOAD_URL')
-      return
-    }
-
     try {
+      const ws = connectWS()
+      if (!ws) return
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaStreamRef.current = stream
+      streamRef.current = stream
 
-      // WebSocket 建立
-      if (mode === 'ws' && WS_URL) {
-        const ws = new WebSocket(WS_URL)
-        ws.binaryType = 'arraybuffer'
-        ws.onopen = () => {
-          setStatus('已连接服务端，开始录音…')
-          try {
-            ws.send(JSON.stringify({ type: 'start', format: 'opus', mimeType: pickSupportedMimeType() || 'default' }))
-          } catch {}
-        }
-        ws.onerror = (e) => setStatus('WebSocket 连接错误')
-        ws.onclose = () => setStatus('WebSocket 已关闭')
-        wsRef.current = ws
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: TARGET_RATE })
+      audioCtxRef.current = audioCtx
+      srcRateRef.current = audioCtx.sampleRate
+
+      const source = audioCtx.createMediaStreamSource(stream)
+      sourceRef.current = source
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1)
+      processorRef.current = processor
+      source.connect(processor)
+      processor.connect(audioCtx.destination)
+
+      processor.onaudioprocess = (e: AudioProcessingEvent) => {
+        const input = e.inputBuffer.getChannelData(0)
+        const resampled = resampleTo16k(input, srcRateRef.current)
+        appendResampled(resampled)
+        flushSegments()
       }
 
-      const mimeType = pickSupportedMimeType()
-      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
-      mediaRecorderRef.current = mr
-
-      mr.ondataavailable = async (ev: BlobEvent) => {
-        if (!ev.data || ev.data.size === 0) return
-        const blob = ev.data
-        if (modeRef.current === 'ws' && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          try {
-            const buf = await blob.arrayBuffer()
-            wsRef.current.send(buf)
-          } catch (err) {
-            console.warn('发送音频分片失败', err)
-          }
-        } else if (modeRef.current === 'http') {
-          chunksRef.current.push(blob)
-        }
-      }
-
-      mr.onstart = () => setStatus('录音中…')
-      mr.onstop = async () => {
-        if (modeRef.current === 'http' && UPLOAD_URL) {
-          try {
-            const allBlob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' })
-            const form = new FormData()
-            form.append('file', allBlob, 'audio.webm')
-            // 可根据后端改成 application/octet-stream 或自定义字段
-            const resp = await fetch(UPLOAD_URL, {
-              method: 'POST',
-              body: form,
-            })
-            if (!resp.ok) {
-              throw new Error(`上传失败: ${resp.status}`)
-            }
-            setStatus('音频已上传')
-          } catch (err: any) {
-            setStatus(`上传出错: ${err?.message || '未知错误'}`)
-          }
-        }
-        cleanup()
-      }
-
-      // 每 300ms 产出一段音频分片（实时语音识别常用）
-      mr.start(300)
+      setStatus(`开始采集（源采样率=${srcRateRef.current} → 目标采样率=16000）`)
       setIsRecording(true)
     } catch (err: any) {
       console.error(err)
@@ -140,23 +152,20 @@ const MicRecorderButton: React.FC = () => {
       cleanup()
       setIsRecording(false)
     }
-  }, [cleanup])
+  }, [cleanup, connectWS])
 
   const stopRecording = useCallback(() => {
-    try {
-      mediaRecorderRef.current?.stop()
-    } catch {}
     setIsRecording(false)
     setStatus('结束中…')
-  }, [])
+    cleanup()
+  }, [cleanup])
 
   const handleClick = useCallback(() => {
-    if (isRecording) {
-      stopRecording()
-    } else {
-      startRecording()
-    }
+    if (isRecording) stopRecording()
+    else startRecording()
   }, [isRecording, startRecording, stopRecording])
+
+  useEffect(() => () => cleanup(), [cleanup])
 
   return (
     <div className="mic-fab-container">

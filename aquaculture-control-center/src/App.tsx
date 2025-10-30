@@ -7,6 +7,7 @@ import LocationInfo from './components/LocationInfo';
 import { generateMockSensorData, generateMockAIMessages, generateMockDeviceStatus, generateMockLocationData } from './utils/mockData';
 import './App.css';
 import MicRecorderButton from './components/MicRecorderButton';
+import AsrSubtitleOverlay from './components/AsrSubtitleOverlay';
 
 function App() {
   const [sensorData, setSensorData] = useState<any>({});
@@ -14,6 +15,8 @@ function App() {
   const [deviceStatus, setDeviceStatus] = useState<any[]>([]);
   const [locationData, setLocationData] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [asrPartialText, setAsrPartialText] = useState<string>('');
+  const [asrFinalText, setAsrFinalText] = useState<string>('');
 
   // 传感器类型定义
   const sensorTypes = [
@@ -132,8 +135,14 @@ function App() {
         </div>
       </main>
 
+      {/* 字幕叠加层：显示实时/最终识别文本 */}
+      <AsrSubtitleOverlay partialText={asrPartialText} finalText={asrFinalText} />
+
       {/* 右下角悬浮麦克风按钮 */}
-      <MicRecorderButton />
+      <MicRecorderButton
+        onPartial={(t) => setAsrPartialText(t)}
+        onFinal={(t) => { setAsrPartialText(''); setAsrFinalText(t); }}
+      />
     </div>
   );
 }
