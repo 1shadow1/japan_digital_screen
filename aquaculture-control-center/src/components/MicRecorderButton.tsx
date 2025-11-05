@@ -1,4 +1,4 @@
-import { TTSPlayer } from "../utils/ttsPlayer"
+import { TTSPlayer } from "@/utils/ttsPlayer"
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import './MicRecorderButton.css'
 
@@ -29,6 +29,15 @@ const PACKET_SAMPLES = 3200
 
 // 环境变量配置（可在 .env.[mode] 中配置）
 const ENV_WS_URL = import.meta.env.VITE_ASR_WS_URL as string | undefined
+/**
+ * 解析并规范化 WebSocket 地址
+ * 输入：环境变量中的 `VITE_ASR_WS_URL`（可为绝对或相对）
+ * 输出：字符串形式的最终 WS 地址；在 HTTPS 页面下自动将 `ws:` 升级为 `wss:`
+ * 兼容逻辑：
+ * - 若未配置环境变量，使用同源默认地址 `/ws-asr`，协议随页面自动选择 ws/wss；
+ * - 若配置了 `ws://` 但页面为 `https:`，自动升级为 `wss://`；
+ * - 若主机为 `0.0.0.0`，替换为当前页面的 `location.hostname`；
+ */
 const defaultWsUrl = (() => {
   try {
     const proto = location.protocol === 'https:' ? 'wss://' : 'ws://'
@@ -37,7 +46,21 @@ const defaultWsUrl = (() => {
     return undefined
   }
 })()
-const WS_URL = ENV_WS_URL || defaultWsUrl
+const resolveWsUrl = (): string | undefined => {
+  try {
+    const isHttps = location.protocol === 'https:'
+    if (ENV_WS_URL && typeof ENV_WS_URL === 'string') {
+      const u = new URL(ENV_WS_URL, location.origin)
+      if (isHttps && u.protocol === 'ws:') u.protocol = 'wss:'
+      if (u.hostname === '0.0.0.0') u.hostname = location.hostname
+      return u.toString()
+    }
+    return defaultWsUrl
+  } catch {
+    return defaultWsUrl
+  }
+}
+const WS_URL = resolveWsUrl()
 
 const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) => {
   const [isRecording, setIsRecording] = useState(false)
@@ -47,31 +70,17 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
   const [status, setStatus] = useState<string>('')
 
   const wsRef = useRef<WebSocket | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const processorRef = useRef<ScriptProcessorNode | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const srcRateRef = useRef<number>(TARGET_RATE)
   const resampledQueueRef = useRef<number[]>([])
 
   // 播放相关引用：用于播放后端推送的 PCM16/24kHz/mono 二进制音频
   const playbackCtxRef = useRef<AudioContext | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const scheduledTimeRef = useRef<number>(0)
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
 
   // 会话与序列（用于过滤与停止事件填充）
   const expectedSessionIdRef = useRef<string | undefined>(undefined)
@@ -380,10 +389,6 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
       const ws = connectWS()
       if (!ws) return
 
-      if (!audioElRef.current) {
-        const el = document.getElementById("tts-audio") as HTMLAudioElement | null;
-        audioElRef.current = el;
-      }
       if (audioElRef.current && !ttsPlayerRef.current) {
         ttsPlayerRef.current = new TTSPlayer(audioElRef.current);
         ttsPlayerRef.current.enableMSE();
@@ -442,7 +447,7 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
       >
         <span className="mic-icon">{isRecording ? '🎙️' : '🎤'}</span>
       </button>
-      <audio id="tts-audio" controls autoplay style={{ display: "none" }} />
+      <audio id="tts-audio" controls autoPlay style={{ display: "none" }} ref={audioElRef} />
       {permissionError && (
         <div className="mic-toast error">{permissionError}</div>
       )}
