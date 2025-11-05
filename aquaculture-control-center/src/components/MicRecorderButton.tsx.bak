@@ -1,4 +1,3 @@
-import { TTSPlayer } from "../utils/ttsPlayer"
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import './MicRecorderButton.css'
 
@@ -42,36 +41,20 @@ const WS_URL = ENV_WS_URL || defaultWsUrl
 const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) => {
   const [isRecording, setIsRecording] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const [status, setStatus] = useState<string>('')
 
   const wsRef = useRef<WebSocket | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const processorRef = useRef<ScriptProcessorNode | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const srcRateRef = useRef<number>(TARGET_RATE)
   const resampledQueueRef = useRef<number[]>([])
 
   // 播放相关引用：用于播放后端推送的 PCM16/24kHz/mono 二进制音频
   const playbackCtxRef = useRef<AudioContext | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
   const scheduledTimeRef = useRef<number>(0)
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null)
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const ttsPlayerRef = useRef<TTSPlayer | null>(null)
 
   // 会话与序列（用于过滤与停止事件填充）
   const expectedSessionIdRef = useRef<string | undefined>(undefined)
@@ -137,7 +120,6 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
         try { currentSourceRef.current.stop() } catch {}
         currentSourceRef.current.disconnect()
         currentSourceRef.current = null
-      try { ttsPlayerRef.current?.reset() } catch {}
       }
       // 重置调度时间为当前，清空后续队列（通过重置 scheduledTime 实现）
       const pctx = ensurePlaybackCtx()
@@ -190,7 +172,6 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
       if (currentSourceRef.current === source) {
         try { currentSourceRef.current.disconnect() } catch {}
         currentSourceRef.current = null
-      try { ttsPlayerRef.current?.reset() } catch {}
       }
     }
   }
@@ -254,15 +235,6 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
       if (typeof data === 'string') {
         try {
           const msg = JSON.parse(data)
-          if (msg.type === "dialog" && msg.stream === false) {
-            try { ttsPlayerRef.current?.playCollected() } catch (e) {}
-          }
-          if (msg && msg.type === "audio" && msg.mime === "audio/mpeg" && typeof msg.data_b64 === "string") {
-            if (ttsPlayerRef.current && audioElRef.current) {
-              ttsPlayerRef.current.appendBase64(msg.data_b64 as string);
-            }
-            return;
-          }
           // 建立/过滤会话 ID（如果后端提供）
           if (msg.session_id && !expectedSessionIdRef.current) {
             expectedSessionIdRef.current = msg.session_id as string
@@ -380,15 +352,6 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
       const ws = connectWS()
       if (!ws) return
 
-      if (!audioElRef.current) {
-        const el = document.getElementById("tts-audio") as HTMLAudioElement | null;
-        audioElRef.current = el;
-      }
-      if (audioElRef.current && !ttsPlayerRef.current) {
-        ttsPlayerRef.current = new TTSPlayer(audioElRef.current);
-        ttsPlayerRef.current.enableMSE();
-        audioElRef.current.play().catch(() => {});
-      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
 
@@ -442,7 +405,6 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
       >
         <span className="mic-icon">{isRecording ? '🎙️' : '🎤'}</span>
       </button>
-      <audio id="tts-audio" controls autoplay style={{ display: "none" }} />
       {permissionError && (
         <div className="mic-toast error">{permissionError}</div>
       )}
