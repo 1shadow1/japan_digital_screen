@@ -28,6 +28,20 @@ export default defineConfig({
     port: 8083,
     strictPort: true,
     // host: true,
+    /**
+     * 代理配置（开发环境消除跨域）：
+     * - 将以 /api 开头的请求代理到后端服务 http://8.216.33.92:5002
+     * - 开启 changeOrigin 以伪装来源为目标地址，避免后端基于 Host 的限制
+     * - secure: false 允许代理到 http（非 https）目标
+     *
+     * 注意：vite.config.ts 变更后需重启开发服务器生效
+     */
+    proxy: {
+      "/api": {
+        target: "http://8.216.33.92:5002",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })
-

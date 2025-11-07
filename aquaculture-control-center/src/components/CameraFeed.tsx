@@ -22,13 +22,21 @@ interface CameraData {
   motionDetection: boolean;
 }
 
-// 从API获取摄像头数据
+/**
+ * getCameraData
+ * 功能：通过后端接口获取摄像头状态信息
+ * 输入：cameraId 摄像头ID
+ * 输出：CameraData 对象；如失败抛出异常
+ * 关键逻辑：
+ * - 使用相对路径 /api/cameras/:id/status，经由 Vite 代理转发到后端；避免浏览器跨域拦截
+ * - GET 请求不设置 Content-Type，减少 CORS 预检的触发；保留 5 秒超时
+ */
 const getCameraData = async (cameraId: number): Promise<CameraData> => {
-  // 调用本地API获取摄像头状态数据
-  const response = await fetch(`http://8.216.33.92:5002/api/cameras/${cameraId}/status`, {
+  // 通过相对路径交由 Vite 代理处理跨域
+  const response = await fetch(`/api/cameras/${cameraId}/status`, {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
+      'Accept': 'application/json',
     },
     signal: AbortSignal.timeout(5000), // 5秒超时
   });
@@ -70,10 +78,11 @@ const getCameraData = async (cameraId: number): Promise<CameraData> => {
  */
 const fetchCameraImage = async (cameraId: number): Promise<string> => {
   try {
-    const response = await fetch(`http://8.216.33.92:5002/api/cameras/${cameraId}/image`, {
+    // 使用相对路径并通过代理解决跨域；移除不必要的 Content-Type
+    const response = await fetch(`/api/cameras/${cameraId}/image`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       signal: AbortSignal.timeout(8000), // 8秒超时，图片加载需要更长时间
     });
