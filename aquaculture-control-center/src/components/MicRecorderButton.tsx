@@ -55,6 +55,8 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
   const playbackCtxRef = useRef<AudioContext | null>(null)
   const scheduledTimeRef = useRef<number>(0)
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null)
+  // 用户说话打断标志：用于确保“本轮用户说话”仅触发一次打断
+  const userInterruptFlagRef = useRef<boolean>(false)
 
   // 会话与序列（用于过滤与停止事件填充）
   const expectedSessionIdRef = useRef<string | undefined>(undefined)
@@ -84,6 +86,18 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
       }
     }
     return raw
+  }
+
+  /**
+   * 判断当前播放是否处于激活状态（有正在播放或已排队的音频）
+   * 输入：无
+   * 输出：boolean（true 表示有活跃播放/排队，需要打断时能立即生效）
+   */
+  const isPlaybackActive = () => {
+    const pctx = playbackCtxRef.current
+    if (!pctx) return false
+    const now = pctx.currentTime
+    return !!currentSourceRef.current || scheduledTimeRef.current > now + 0.01
   }
 
   /**
@@ -259,6 +273,8 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
                 interruptPlaybackAndNotifyStop('new_dialog_stream')
                 assistantAccumRef.current = ''
                 assistantSeqRef.current = seq
+                // 新助手流开始，重置“用户打断标志”
+                userInterruptFlagRef.current = false
               }
 
               // 累加助手文本并进行流式展示
@@ -278,11 +294,18 @@ const MicRecorderButton: React.FC<Props> = ({ onPartial, onFinal, onDialog }) =>
             const text = msg.text as string
             assistantAccumRef.current = text
             assistantSeqRef.current = (typeof msg.sequence === 'number') ? (msg.sequence as number) : assistantSeqRef.current
+            // 新助手整段文本开始，重置“用户打断标志”
+            userInterruptFlagRef.current = false
             onDialog?.({ role: 'assistant', text, sessionId: expectedSessionIdRef.current, sequence: assistantSeqRef.current })
           }
 
           // ASR 结果：用户消息。仅在 final 时上抛 user 文本；partial 继续走 onPartial
           if (msg.type === 'result') {
+            // 当用户开始新的说话（后端返回新的识别结果）且当前仍在播放/排队音频时，执行一次性打断
+            if (!userInterruptFlagRef.current && isPlaybackActive()) {
+              interruptPlaybackAndNotifyStop('new_user_result')
+              userInterruptFlagRef.current = true
+            }
             const text = (msg.text || '') as string
             if (msg.final) {
               onFinal?.(text)
