@@ -85,7 +85,7 @@ npm run dev
 pnpm dev
 ```
 
-启动成功后，在浏览器中访问 [http://localhost:5173](http://localhost:5173) 即可查看应用。
+启动成功后，在浏览器中访问 [http://localhost:8083](http://localhost:8083) 即可查看应用。
 
 ### 构建生产版本
 

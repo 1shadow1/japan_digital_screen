@@ -40,12 +40,23 @@ const randomChoice = <T>(array: T[]): T => {
 };
 
 // 传感器数据生成 - 从API获取真实数据
+/**
+ * generateMockSensorData
+ * 功能：从后端拉取传感器实时数据（经由 Vite 开发代理 /api → 8.216.33.92:5002）
+ * 输入：sensorTypes - 传感器类型列表（当前未使用，保留参数以兼容未来筛选）
+ * 输出：返回后端的 data 数组；如失败抛出异常
+ * 关键逻辑：
+ * - 使用相对路径 /api/sensors/realtime，避免直接跨域；由 Vite 代理转发到后端
+ * - GET 请求不设置 Content-Type（无请求体时不需要，且可避免触发 CORS 预检）
+ * - 设置 5 秒超时并对响应进行格式校验
+ */
 export const generateMockSensorData = async (sensorTypes: any[]) => {
-  // 调用真实API获取传感器数据
-  const response = await fetch('http://8.216.33.92:5002/api/sensors/realtime', {
+  // 通过相对路径交由 Vite 代理处理跨域
+  const response = await fetch('/api/sensors/realtime', {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
+      // 'Accept' 为简单请求头，不会触发预检
+      'Accept': 'application/json',
     },
     // 设置超时时间
     signal: AbortSignal.timeout(5000)
@@ -66,12 +77,18 @@ export const generateMockSensorData = async (sensorTypes: any[]) => {
 };
 
 // AI决策消息API接口调用
+/**
+ * generateMockAIMessages
+ * 功能：获取最近的 AI 决策消息列表
+ * 输入：无
+ * 输出：返回后端的 data 数组；如失败抛出异常
+ * 关键逻辑：改为相对路径 /api/ai/decisions/recent，并移除不必要的 Content-Type
+ */
 export const generateMockAIMessages = async () => {
-  // 调用真实的AI助手API接口
-  const response = await fetch('http://8.216.33.92:5002/api/ai/decisions/recent', {
+  // 调用真实的AI助手API接口（通过代理消除跨域）
+  const response = await fetch('/api/ai/decisions/recent', {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
     // 设置超时时间
@@ -92,12 +109,18 @@ export const generateMockAIMessages = async () => {
 };
 
 // 设备状态API接口调用
+/**
+ * generateMockDeviceStatus
+ * 功能：获取设备状态列表
+ * 输入：无
+ * 输出：返回后端的 data 数组；如失败抛出异常
+ * 关键逻辑：相对路径 /api/devices/status；只保留 Accept 以减少预检
+ */
 export const generateMockDeviceStatus = async () => {
-  // 调用真实的设备状态API接口
-  const response = await fetch('http://8.216.33.92:5002/api/devices/status', {
+  // 调用真实的设备状态API接口（通过代理消除跨域）
+  const response = await fetch('/api/devices/status', {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
     // 设置超时时间
@@ -120,13 +143,20 @@ export const generateMockDeviceStatus = async () => {
 
 
 // 地理位置数据生成 - 替换为API调用
+/**
+ * generateMockLocationData
+ * 功能：获取地理位置数据，并转换为前端需要的结构
+ * 输入：无
+ * 输出：转换后的位置数据数组；如失败则回退到本地模拟数据
+ * 关键逻辑：相对路径 /api/location/data；移除不必要的 Content-Type 以减少预检
+ */
 export const generateMockLocationData = async () => {
   try {
-    // 调用本地API获取地理位置数据
-    const response = await fetch('http://8.216.33.92:5002/api/location/data', {
+    // 调用后端API（通过代理）获取地理位置数据
+    const response = await fetch('/api/location/data', {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       // 设置超时时间
       signal: AbortSignal.timeout(5000)

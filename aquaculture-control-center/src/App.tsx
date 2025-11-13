@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import SensorChart from './components/SensorChart';
 import CameraFeed from './components/CameraFeed';
 import AIDecisionChat from './components/AIDecisionChat';
@@ -7,6 +7,7 @@ import LocationInfo from './components/LocationInfo';
 import { generateMockSensorData, generateMockAIMessages, generateMockDeviceStatus, generateMockLocationData } from './utils/mockData';
 import './App.css';
 import MicRecorderButton from './components/MicRecorderButton';
+import AsrSubtitleOverlay from './components/AsrSubtitleOverlay';
 
 function App() {
   const [sensorData, setSensorData] = useState<any>({});
@@ -14,6 +15,10 @@ function App() {
   const [deviceStatus, setDeviceStatus] = useState<any[]>([]);
   const [locationData, setLocationData] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [asrPartialText, setAsrPartialText] = useState<string>('');
+  const [asrFinalText, setAsrFinalText] = useState<string>('');
+  // 语音对话消息列表（用于“用户/助手”消息展示）
+  const [chatMsgs, setChatMsgs] = useState<Array<{ role: 'user' | 'assistant'; text: string; sessionId?: string; sequence?: number; ts: number }>>([])
 
   // 传感器类型定义
   const sensorTypes = [
@@ -72,6 +77,41 @@ function App() {
     
     return () => clearInterval(interval);
   }, []);
+
+  /**
+   * 处理 MicRecorderButton 组件通过 onDialog 上抛的“对话消息”（用户/助手）
+   * 输入：msg（包含 role、text、sessionId、sequence）
+   * 输出：更新 chatMsgs，用于右侧“语音对话”区的展示
+   * 关键逻辑：
+   * - 用户消息（role='user'）：直接在列表末尾追加
+   * - 助手消息（role='assistant'）：
+   *   - 若与列表末尾的助手消息处于同一回复流（依据 sequence，相同或未提供），则更新末尾消息的文本，实现“流式累积展示”；
+   *   - 否则追加新的助手消息条目，开始新的回复段。
+   */
+  const handleDialog = useCallback((msg: { role: 'user' | 'assistant'; text: string; sessionId?: string; sequence?: number }) => {
+    setChatMsgs(prev => {
+      const ts = Date.now()
+      // 仅保留最近 50 条，避免无限增长
+      const cap = (arr: typeof prev) => (arr.length > 50 ? arr.slice(arr.length - 50) : arr)
+
+      if (msg.role === 'assistant') {
+        const last = prev[prev.length - 1]
+        const sameSeq = typeof msg.sequence === 'number' && last && last.role === 'assistant' && last.sequence === msg.sequence
+        const unknownSeqAppend = typeof msg.sequence !== 'number' && last && last.role === 'assistant' && typeof last.sequence !== 'number'
+        if (sameSeq || unknownSeqAppend) {
+          // 更新末尾助手消息，实现流式展示
+          const updated = [...prev]
+          updated[updated.length - 1] = { ...last, text: msg.text, ts, sessionId: msg.sessionId, sequence: msg.sequence }
+          return cap(updated)
+        }
+        // 追加新的助手消息
+        return cap([...prev, { role: 'assistant', text: msg.text, sessionId: msg.sessionId, sequence: msg.sequence, ts }])
+      }
+
+      // 用户消息：直接追加
+      return cap([...prev, { role: 'user', text: msg.text, sessionId: msg.sessionId, sequence: msg.sequence, ts }])
+    })
+  }, [])
 
   return (
     <div className="app-container">
@@ -132,8 +172,29 @@ function App() {
         </div>
       </main>
 
+      {/* 字幕叠加层：显示实时/最终识别文本 */}
+      <AsrSubtitleOverlay partialText={asrPartialText} finalText={asrFinalText} />
+
+      {/* 右侧：语音对话简单列表（用户/助手） */}
+      <section className="chat-section" style={{ position: 'absolute', right: 16, bottom: 96, width: 360 }}>
+        <h2 className="section-title">语音对话</h2>
+        <div className="chat-list" style={{ maxHeight: 240, overflowY: 'auto', padding: '8px 12px', background: 'rgba(0,31,63,0.35)', borderRadius: 12 }}>
+          {chatMsgs.map((m, i) => (
+            <div key={i} className={`chat-item ${m.role}`} style={{ margin: '6px 0', color: '#cfefff' }}>
+              <span className="chat-role" style={{ fontWeight: 600, marginRight: 6 }}>{m.role === 'user' ? '用户' : '助手'}：</span>
+              <span className="chat-text" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* 右下角悬浮麦克风按钮 */}
-      <MicRecorderButton />
+      <MicRecorderButton
+        onPartial={(t) => setAsrPartialText(t)}
+        onFinal={(t) => { setAsrPartialText(''); setAsrFinalText(t); }}
+        // 接入对话消息：将“用户/助手”消息展示到右侧“语音对话”区
+        onDialog={(m) => handleDialog(m)}
+      />
     </div>
   );
 }
