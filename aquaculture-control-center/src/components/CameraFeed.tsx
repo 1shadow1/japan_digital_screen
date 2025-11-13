@@ -173,11 +173,11 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
     }
   }, [cameraData]);
 
-  // 定时更新数据和图片（每30秒）
+  // 定时更新数据和图片（每10分钟）
   useEffect(() => {
     const interval = setInterval(() => {
       loadCameraData();
-    }, 30000); // 30秒更新一次
+    }, 600000); // 10分钟更新一次
 
     return () => clearInterval(interval);
   }, [cameraId]);

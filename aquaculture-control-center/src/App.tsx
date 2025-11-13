@@ -26,7 +26,7 @@ function App() {
     { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] as [number, number] },
     { id: 'oxygen', name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] as [number, number] },
     { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] as [number, number] },
-    { id: 'level', name: '水位', unit: 'm', color: '#00a8cc', threshold: [1.5, 3.0] as [number, number] },
+    // { id: 'level', name: '水位', unit: 'm', color: '#00a8cc', threshold: [1.5, 3.0] as [number, number] },
     
   ];
 
