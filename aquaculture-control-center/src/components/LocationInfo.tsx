@@ -156,7 +156,7 @@ const LocationInfo: React.FC<LocationInfoProps> = ({ locations }) => {
                   <span className="detail-value">{location.area.toLocaleString()} m²</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">鱼量：</span>
+                  <span className="detail-label">虾量：</span>
                   <span className="detail-value">{location.fishCount.toLocaleString()}</span>
                 </div>
                 <div className="detail-item">

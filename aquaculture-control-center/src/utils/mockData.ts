@@ -213,14 +213,14 @@ export const generateMockLocationData = async () => {
     
     // 备用模拟数据生成逻辑（与原函数相同）
     const locations = [
-      { name: '1号养殖池', area: 2500, region: 'A区' },
-      { name: '2号养殖池', area: 2800, region: 'A区' },
-      { name: '3号养殖池', area: 2200, region: 'B区' },
-      { name: '4号养殖池', area: 3000, region: 'B区' },
-      { name: '5号养殖池', area: 2600, region: 'C区' },
-      { name: '孵化池-1', area: 800, region: 'D区' },
-      { name: '孵化池-2', area: 750, region: 'D区' },
-      { name: '暂养池', area: 1200, region: 'E区' }
+      { name: '1号养殖池', area: 15, region: 'A区' },
+      // { name: '2号养殖池', area: 2800, region: 'A区' },
+      // { name: '3号养殖池', area: 2200, region: 'B区' },
+      // { name: '4号养殖池', area: 3000, region: 'B区' },
+      // { name: '5号养殖池', area: 2600, region: 'C区' },
+      // { name: '孵化池-1', area: 800, region: 'D区' },
+      // { name: '孵化池-2', area: 750, region: 'D区' },
+      // { name: '暂养池', area: 1200, region: 'E区' }
     ];
     
     const baseCoordinates = { lat: 35.6762, lng: 139.6503 }; // 东京附近
