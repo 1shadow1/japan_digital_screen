@@ -270,14 +270,20 @@ body {
 
 /* 传感器网格 */
 .sensor-section {
-  flex: 2;
+  /* 移除 flex: 2，让它根据内容自适应 */
+  flex: 0 1 auto;
+  min-height: 0;
 }
 
 .sensor-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.8rem;
-  height: calc(100% - 50px);
+  /* 移除固定高度 */
+  /* height: calc(100% - 50px); */
+  min-height: 0;
+  /* 让行高自适应内容 */
+  grid-auto-rows: minmax(180px, auto);
 }
 
 /* 摄像头网格 */

@@ -9,36 +9,113 @@ import './App.css';
 import MicRecorderButton from './components/MicRecorderButton';
 import AsrSubtitleOverlay from './components/AsrSubtitleOverlay';
 
+// 摄像头列表接口类型
+interface CameraListItem {
+  id: number;
+  name?: string;
+  location?: string;
+}
+
+// 传感器类型配置映射（用于设置显示名称、单位、颜色、阈值等）
+// 移到组件外部，避免每次渲染都创建新对象
+const sensorTypeConfig: { [key: string]: { name: string; unit: string; color: string; threshold: [number, number] } } = {
+  'temperature': { name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] },
+  'ph': { name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] },
+  'oxygen': { name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] },
+  'turbidity': { name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] },
+  'level': { name: '水位', unit: 'm', color: '#00a8cc', threshold: [1.5, 3.0] },
+  'ammonia': { name: '氨氮浓度', unit: 'mg/L', color: '#4A90E2', threshold: [0, 1.0] },
+  'nitrite': { name: '亚硝酸盐浓度', unit: 'mg/L', color: '#5B9BD5', threshold: [0, 0.5] },
+};
+
 function App() {
   const [sensorData, setSensorData] = useState<any>({});
+  const [sensorTypes, setSensorTypes] = useState<any[]>([]); // 改为状态变量，动态生成
   const [aiMessages, setAiMessages] = useState<any[]>([]);
   const [deviceStatus, setDeviceStatus] = useState<any[]>([]);
   const [locationData, setLocationData] = useState<any[]>([]);
+  const [cameraList, setCameraList] = useState<CameraListItem[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [asrPartialText, setAsrPartialText] = useState<string>('');
   const [asrFinalText, setAsrFinalText] = useState<string>('');
-  // 语音对话消息列表（用于“用户/助手”消息展示）
+  // 语音对话消息列表（用于"用户/助手"消息展示）
   const [chatMsgs, setChatMsgs] = useState<Array<{ role: 'user' | 'assistant'; text: string; sessionId?: string; sequence?: number; ts: number }>>([])
 
-  // 传感器类型定义
-  const sensorTypes = [
-    { id: 'temperature', name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] as [number, number] },
-    { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] as [number, number] },
-    { id: 'oxygen', name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] as [number, number] },
-    { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] as [number, number] },
-    // { id: 'level', name: '水位', unit: 'm', color: '#00a8cc', threshold: [1.5, 3.0] as [number, number] },
-    
-  ];
+  // 获取摄像头列表
+  const fetchCameraList = async () => {
+    try {
+      const response = await fetch('/api/cameras/list', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(5000), // 5秒超时
+      });
+
+      if (!response.ok) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data && Array.isArray(result.data)) {
+        console.log('摄像头列表API调用成功:', result);
+        setCameraList(result.data);
+      } else {
+        throw new Error('API返回数据格式错误');
+      }
+    } catch (error) {
+      console.error('获取摄像头列表失败:', error);
+      // 如果接口失败，使用默认的5个摄像头作为备用方案
+      setCameraList([
+        { id: 1 },
+        { id: 2 },
+        { id: 3 },
+        { id: 4 },
+        { id: 5 }
+      ]);
+    }
+  };
 
   // 模拟实时数据更新
   useEffect(() => {
     const updateData = async () => {
       try {
         // 异步调用传感器数据API
-        const newSensorData = await generateMockSensorData(sensorTypes);
+        const newSensorData = await generateMockSensorData([]);
         setSensorData(newSensorData);
+        
+        // 根据返回的数据动态生成传感器类型列表
+        // 只显示在 sensorTypeConfig 中配置的7个传感器类型
+        if (newSensorData && typeof newSensorData === 'object' && !Array.isArray(newSensorData)) {
+          const detectedSensorIds = Object.keys(newSensorData);
+          // 只保留在配置中定义的传感器类型
+          const detectedSensorTypes = detectedSensorIds
+            .filter(sensorId => sensorTypeConfig[sensorId]) // 只保留配置中有的传感器
+            .map(sensorId => {
+              const config = sensorTypeConfig[sensorId];
+              return {
+                id: sensorId,
+                ...config
+              };
+            });
+          
+          // 只有当检测到的传感器类型与当前不同时才更新，避免不必要的重渲染
+          if (detectedSensorTypes.length > 0) {
+            setSensorTypes(detectedSensorTypes);
+          }
+        }
       } catch (error) {
         console.error('更新传感器数据失败:', error);
+        // 如果API失败且还没有传感器类型，使用默认的4个传感器类型作为备用
+        if (sensorTypes.length === 0) {
+          setSensorTypes([
+            { id: 'temperature', name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] as [number, number] },
+            { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] as [number, number] },
+            { id: 'oxygen', name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] as [number, number] },
+            { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] as [number, number] },
+          ]);
+        }
       }
       
       // 异步调用AI消息API
@@ -76,6 +153,11 @@ function App() {
     const interval = setInterval(updateData, 3600000); // 每3600秒更新一次
     
     return () => clearInterval(interval);
+  }, []); // 空依赖数组，只在组件挂载时执行一次
+
+  // 获取摄像头列表（只在组件挂载时调用一次，因为摄像头列表通常不会频繁变化）
+  useEffect(() => {
+    fetchCameraList();
   }, []);
 
   /**
@@ -129,13 +211,20 @@ function App() {
           <section className="sensor-section">
             <h2 className="section-title">传感器实时监控</h2>
             <div className="sensor-grid">
-              {sensorTypes.map(sensor => (
-                <SensorChart
-                  key={sensor.id}
-                  sensorType={sensor}
-                  data={sensorData[sensor.id] || []}
-                />
-              ))}
+              {sensorTypes.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#cfefff', gridColumn: '1 / -1' }}>
+                  <div className="loading-spinner"></div>
+                  <p>正在加载传感器数据...</p>
+                </div>
+              ) : (
+                sensorTypes.map(sensor => (
+                  <SensorChart
+                    key={sensor.id}
+                    sensorType={sensor}
+                    data={sensorData[sensor.id] || []}
+                  />
+                ))
+              )}
             </div>
           </section>
 
@@ -151,9 +240,16 @@ function App() {
           <section className="camera-section">
             <h2 className="section-title">实时图像监控</h2>
             <div className="camera-grid">
-              {Array.from({ length: 5 }, (_, i) => (
-                <CameraFeed key={i} cameraId={i + 1} />
-              ))}
+              {cameraList.length === 0 ? (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#cfefff' }}>
+                  <div className="loading-spinner"></div>
+                  <p>正在加载摄像头列表...</p>
+                </div>
+              ) : (
+                cameraList.map((camera) => (
+                  <CameraFeed key={camera.id} cameraId={camera.id} />
+                ))
+              )}
             </div>
           </section>
         </div>
