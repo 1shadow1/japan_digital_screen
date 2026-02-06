@@ -24,8 +24,6 @@ const sensorTypeConfig: { [key: string]: { name: string; unit: string; color: st
   'oxygen': { name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] },
   'turbidity': { name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] },
   'level': { name: '水位', unit: 'm', color: '#00a8cc', threshold: [1.5, 3.0] },
-  'ammonia': { name: '氨氮浓度', unit: 'mg/L', color: '#4A90E2', threshold: [0, 1.0] },
-  'nitrite': { name: '亚硝酸盐浓度', unit: 'mg/L', color: '#5B9BD5', threshold: [0, 0.5] },
 };
 
 function App() {
@@ -86,7 +84,7 @@ function App() {
         setSensorData(newSensorData);
         
         // 根据返回的数据动态生成传感器类型列表
-        // 只显示在 sensorTypeConfig 中配置的7个传感器类型
+        // 只显示在 sensorTypeConfig 中配置的传感器类型
         if (newSensorData && typeof newSensorData === 'object' && !Array.isArray(newSensorData)) {
           const detectedSensorIds = Object.keys(newSensorData);
           // 只保留在配置中定义的传感器类型

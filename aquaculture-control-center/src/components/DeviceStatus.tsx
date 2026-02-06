@@ -16,13 +16,25 @@ interface DeviceStatusProps {
   devices: Device[];
 }
 
+// 判断设备是否在线（仅 online / 运行中 视为在线，其余均归为离线）
+const isDeviceOnline = (device: Device) => {
+  const s = (device.status || '').toLowerCase();
+  return s === 'online' || device.status === '运行中';
+};
+
+const FAULT_STATUS_COLOR = '#e74c3c';
+
 const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
   const [filter, setFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // 过滤和搜索设备
+  // 过滤和搜索设备（离线 = 非 online 的设备）
   const filteredDevices = devices.filter(device => {
-    const matchesFilter = filter === 'all' || device.status === filter;
+    const isOnline = isDeviceOnline(device);
+    const matchesFilter =
+      filter === 'all' ||
+      (filter === '运行中' && isOnline) ||
+      (filter === '离线' && !isOnline);
     const matchesSearch = device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          device.type.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
@@ -42,19 +54,14 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
     return icons[type as keyof typeof icons] || '💻';
   };
 
-  // 获取状态统计
+  // 获取状态统计：非 online 的均计入离线
   const getStatusStats = () => {
-    const stats = devices.reduce((acc, device) => {
-      acc[device.status] = (acc[device.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+    const running = devices.filter(isDeviceOnline).length;
+    const error = devices.length - running;
     return {
       total: devices.length,
-      running: stats['运行中'] || 0,
-      standby: stats['待机'] || 0,
-      maintenance: stats['维护中'] || 0,
-      error: stats['故障'] || 0
+      running,
+      error
     };
   };
 
@@ -78,7 +85,7 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
           </div>
           <div className="stat-card error">
             <span className="stat-number">{stats.error}</span>
-            <span className="stat-label">故障</span>
+            <span className="stat-label">离线</span>
           </div>
         </div>
       </div>
@@ -99,10 +106,10 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
             运行中
           </button>
           <button 
-            className={`filter-btn ${filter === '故障' ? 'active' : ''}`}
-            onClick={() => setFilter('故障')}
+            className={`filter-btn ${filter === '离线' ? 'active' : ''}`}
+            onClick={() => setFilter('离线')}
           >
-            故障
+            离线
           </button>
         </div>
         
@@ -126,8 +133,12 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
             <p>未找到匹配的设备</p>
           </div>
         ) : (
-          filteredDevices.map(device => (
-            <div key={device.id} className={`device-item ${device.status.replace(/\s+/g, '-').toLowerCase()}`}>
+          filteredDevices.map(device => {
+            const online = isDeviceOnline(device);
+            const displayStatus = online ? device.status : '离线';
+            const displayColor = online ? device.statusColor : FAULT_STATUS_COLOR;
+            return (
+            <div key={device.id} className={`device-item ${online ? device.status.replace(/\s+/g, '-').toLowerCase() : 'error'}`}>
               {/* 设备基本信息 */}
               <div className="device-main">
                 <div className="device-icon">
@@ -144,10 +155,10 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
                 <div className="device-status-indicator">
                   <div 
                     className="status-dot" 
-                    style={{ backgroundColor: device.statusColor }}
+                    style={{ backgroundColor: displayColor }}
                   ></div>
-                  <span className="status-text" style={{ color: device.statusColor }}>
-                    {device.status}
+                  <span className="status-text" style={{ color: displayColor }}>
+                    {displayStatus}
                   </span>
                 </div>
               </div>
@@ -168,11 +179,12 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
               <div className="device-status-bar">
                 <div 
                   className="status-fill" 
-                  style={{ backgroundColor: device.statusColor }}
+                  style={{ backgroundColor: displayColor }}
                 ></div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
