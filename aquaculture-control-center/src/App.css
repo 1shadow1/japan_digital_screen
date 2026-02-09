@@ -286,25 +286,36 @@ body {
   grid-auto-rows: minmax(180px, auto);
 }
 
-/* 摄像头网格 */
+/* 摄像头网格：根据数量自适应，避免只有 2 个摄像头时大面积空白 */
 .camera-section {
   flex: 1;
 }
 
 .camera-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
   gap: 0.8rem;
-  height: calc(100% - 50px);
+  grid-auto-rows: minmax(200px, 1fr);
+  min-height: 200px;
 }
 
-.camera-grid > :nth-child(1) {
-  grid-column: 1 / 3;
+/* 0 个（加载中）/ 1 个摄像头：单列 */
+.camera-grid.camera-count-0,
+.camera-grid.camera-count-1 {
+  grid-template-columns: 1fr;
 }
 
-.camera-grid > :nth-child(4) {
-  grid-column: 2 / 4;
+/* 2 个摄像头：两列均分 */
+.camera-grid.camera-count-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 3 个及以上：三列 */
+.camera-grid.camera-count-3,
+.camera-grid.camera-count-4,
+.camera-grid.camera-count-5,
+.camera-grid.camera-count-6,
+.camera-grid.camera-count-many {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 /* AI聊天区域 */
@@ -357,13 +368,7 @@ body {
   
   .camera-grid {
     grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    height: auto;
-  }
-  
-  .camera-grid > :nth-child(1),
-  .camera-grid > :nth-child(4) {
-    grid-column: auto;
+    grid-auto-rows: minmax(200px, 1fr);
   }
 }
 
@@ -394,7 +399,7 @@ body {
   
   .camera-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: repeat(5, 1fr);
+    grid-auto-rows: minmax(200px, 1fr);
   }
   
   .app-main {

@@ -237,7 +237,7 @@ function App() {
           {/* 图像采集区域 */}
           <section className="camera-section">
             <h2 className="section-title">实时图像监控</h2>
-            <div className="camera-grid">
+            <div className={`camera-grid camera-count-${cameraList.length === 0 ? 0 : cameraList.length <= 6 ? cameraList.length : 'many'}`}>
               {cameraList.length === 0 ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#cfefff' }}>
                   <div className="loading-spinner"></div>
