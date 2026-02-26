@@ -27,7 +27,7 @@ export default defineConfig({
   server: {
     port: 8083,
     strictPort: true,
-    // host: true,
+    host: true,
     /**
      * 代理配置（开发环境消除跨域）：
      * - 将以 /api 开头的请求代理到后端服务 http://8.216.33.92:5002

@@ -138,10 +138,8 @@ function App() {
         setLocationData(Array.isArray(newLocationData) ? newLocationData : []);
       }).catch(error => {
         console.error('更新地理位置数据失败:', error);
-        setLocationData([]); // 确保在错误情况下也设置为空数组
+        setLocationData([]);
       });
-      
-      setCurrentTime(new Date());
     };
 
     // 初始数据
@@ -152,6 +150,14 @@ function App() {
     
     return () => clearInterval(interval);
   }, []); // 空依赖数组，只在组件挂载时执行一次
+
+  // 每秒更新头部时间显示
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 获取摄像头列表（只在组件挂载时调用一次，因为摄像头列表通常不会频繁变化）
   useEffect(() => {

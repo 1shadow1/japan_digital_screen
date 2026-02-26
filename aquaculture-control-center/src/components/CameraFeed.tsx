@@ -278,23 +278,6 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
                 />
               )}
               
-              {/* 实时数据叠加层 */}
-              <div className="overlay-info">
-                <div className="overlay-item">
-                  <span className="label">温度:</span>
-                  <span className="value">
-                    {cameraData.temperature ? `${cameraData.temperature.toFixed(1)}°C` : 'N/A'}
-                  </span>
-                </div>
-                <div className="overlay-item">
-                  <span className="label">连接:</span>
-                  <span className="value">{cameraData.connectivity}%</span>
-                </div>
-                <div className="overlay-item">
-                  <span className="label">FPS:</span>
-                  <span className="value">{cameraData.fps}</span>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="offline-placeholder">
