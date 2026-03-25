@@ -44,11 +44,12 @@ const randomChoice = <T>(array: T[]): T => {
  * generateMockSensorData
  * 功能：从后端拉取传感器实时数据（经由 Vite 开发代理 /api → 8.216.33.92:5002）
  * 输入：sensorTypes - 传感器类型列表（当前未使用，保留参数以兼容未来筛选）
- * 输出：返回后端的 data 数组；如失败抛出异常
+ * 输出：返回按传感器ID分组的对象格式 { sensorId: [{timestamp, value, time}, ...] }
  * 关键逻辑：
  * - 使用相对路径 /api/sensors/realtime，避免直接跨域；由 Vite 代理转发到后端
  * - GET 请求不设置 Content-Type（无请求体时不需要，且可避免触发 CORS 预检）
  * - 设置 5 秒超时并对响应进行格式校验
+ * - 将后端返回的数组格式转换为按传感器ID分组的对象格式
  */
 export const generateMockSensorData = async (sensorTypes: any[]) => {
   // 通过相对路径交由 Vite 代理处理跨域
@@ -70,6 +71,33 @@ export const generateMockSensorData = async (sensorTypes: any[]) => {
   
   if (result.success && result.data) {
     console.log('传感器数据API调用成功:', result);
+    
+    // 如果返回的是数组，需要转换为按传感器ID分组的对象格式
+    if (Array.isArray(result.data)) {
+      const groupedData: { [key: string]: Array<{ timestamp: number; value: number; time: string }> } = {};
+      
+      result.data.forEach((item: any) => {
+        const sensorId = item.sensorId || item.id;
+        if (!sensorId) {
+          console.warn('传感器数据缺少sensorId:', item);
+          return;
+        }
+        
+        if (!groupedData[sensorId]) {
+          groupedData[sensorId] = [];
+        }
+        
+        groupedData[sensorId].push({
+          timestamp: item.timestamp,
+          value: item.value,
+          time: new Date(item.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+        });
+      });
+      
+      return groupedData;
+    }
+    
+    // 如果已经是对象格式，直接返回
     return result.data;
   } else {
     throw new Error('API返回数据格式错误');
@@ -213,14 +241,14 @@ export const generateMockLocationData = async () => {
     
     // 备用模拟数据生成逻辑（与原函数相同）
     const locations = [
-      { name: '1号养殖池', area: 2500, region: 'A区' },
-      { name: '2号养殖池', area: 2800, region: 'A区' },
-      { name: '3号养殖池', area: 2200, region: 'B区' },
-      { name: '4号养殖池', area: 3000, region: 'B区' },
-      { name: '5号养殖池', area: 2600, region: 'C区' },
-      { name: '孵化池-1', area: 800, region: 'D区' },
-      { name: '孵化池-2', area: 750, region: 'D区' },
-      { name: '暂养池', area: 1200, region: 'E区' }
+      { name: '1号养殖池', area: 15, region: 'A区' },
+      // { name: '2号养殖池', area: 2800, region: 'A区' },
+      // { name: '3号养殖池', area: 2200, region: 'B区' },
+      // { name: '4号养殖池', area: 3000, region: 'B区' },
+      // { name: '5号养殖池', area: 2600, region: 'C区' },
+      // { name: '孵化池-1', area: 800, region: 'D区' },
+      // { name: '孵化池-2', area: 750, region: 'D区' },
+      // { name: '暂养池', area: 1200, region: 'E区' }
     ];
     
     const baseCoordinates = { lat: 35.6762, lng: 139.6503 }; // 东京附近

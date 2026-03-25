@@ -72,39 +72,42 @@ const getCameraData = async (cameraId: number): Promise<CameraData> => {
 };
 
 /**
- * 从API获取摄像头图片URL
+ * 从API获取摄像头图片（二进制数据）
  * @param cameraId 摄像头ID
- * @returns Promise<string> 图片URL或错误信息
+ * @returns Promise<string> Blob Object URL，可直接用于 <img src>
  */
 const fetchCameraImage = async (cameraId: number): Promise<string> => {
   try {
-    // 使用相对路径并通过代理解决跨域；移除不必要的 Content-Type
     const response = await fetch(`/api/cameras/${cameraId}/image`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        'Accept': 'image/*',
       },
-      signal: AbortSignal.timeout(8000), // 8秒超时，图片加载需要更长时间
+      signal: AbortSignal.timeout(15000), // 15秒超时，二进制图片可能较大
     });
 
     if (!response.ok) {
       if (response.status === 503) {
         throw new Error('摄像头离线');
       }
-      throw new Error(`获取图片失败: ${response.status}`);
+      // 尝试解析 JSON 错误信息
+      try {
+        const errBody = await response.json();
+        throw new Error(errBody.error || `获取图片失败: ${response.status}`);
+      } catch {
+        throw new Error(`获取图片失败: ${response.status}`);
+      }
     }
 
-    // 解析JSON响应
-    const result = await response.json();
-    
-    if (result.success && result.data && result.data.imageUrl) {
-      console.log('摄像头图片API调用成功:', result);
-      // 直接返回API提供的图片URL
-      return result.data.imageUrl;
-    } else {
-      throw new Error('API返回数据格式错误或缺少imageUrl');
+    // 后端直接返回二进制图片数据，转为 Blob URL
+    const blob = await response.blob();
+    if (blob.size === 0) {
+      throw new Error('返回的图片数据为空');
     }
-    
+    const objectUrl = URL.createObjectURL(blob);
+    console.log(`摄像头 ${cameraId} 图片加载成功，大小: ${blob.size} bytes`);
+    return objectUrl;
+
   } catch (error) {
     console.warn(`摄像头 ${cameraId} 图片获取失败:`, error);
     throw error;
@@ -173,11 +176,11 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
     }
   }, [cameraData]);
 
-  // 定时更新数据和图片（每30秒）
+  // 定时更新数据和图片（每10分钟）
   useEffect(() => {
     const interval = setInterval(() => {
       loadCameraData();
-    }, 30000); // 30秒更新一次
+    }, 600000); // 10分钟更新一次
 
     return () => clearInterval(interval);
   }, [cameraId]);
@@ -275,23 +278,6 @@ const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
                 />
               )}
               
-              {/* 实时数据叠加层 */}
-              <div className="overlay-info">
-                <div className="overlay-item">
-                  <span className="label">温度:</span>
-                  <span className="value">
-                    {cameraData.temperature ? `${cameraData.temperature.toFixed(1)}°C` : 'N/A'}
-                  </span>
-                </div>
-                <div className="overlay-item">
-                  <span className="label">连接:</span>
-                  <span className="value">{cameraData.connectivity}%</span>
-                </div>
-                <div className="overlay-item">
-                  <span className="label">FPS:</span>
-                  <span className="value">{cameraData.fps}</span>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="offline-placeholder">
