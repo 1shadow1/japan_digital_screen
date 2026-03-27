@@ -16,6 +16,12 @@ interface CameraListItem {
   location?: string;
 }
 
+// 养殖池列表接口类型
+interface PondListItem {
+  id: number;
+  name: string;
+}
+
 // 传感器类型配置映射（用于设置显示名称、单位、颜色、阈值等）
 // 移到组件外部，避免每次渲染都创建新对象
 const sensorTypeConfig: { [key: string]: { name: string; unit: string; color: string; threshold: [number, number] } } = {
@@ -27,8 +33,10 @@ const sensorTypeConfig: { [key: string]: { name: string; unit: string; color: st
 };
 
 function App() {
+  const [pondList, setPondList] = useState<PondListItem[]>([]);
+  const [selectedPondId, setSelectedPondId] = useState<number>(0);
   const [sensorData, setSensorData] = useState<any>({});
-  const [sensorTypes, setSensorTypes] = useState<any[]>([]); // 改为状态变量，动态生成
+  const [sensorTypes, setSensorTypes] = useState<any[]>([]);
   const [aiMessages, setAiMessages] = useState<any[]>([]);
   const [deviceStatus, setDeviceStatus] = useState<any[]>([]);
   const [locationData, setLocationData] = useState<any[]>([]);
@@ -36,8 +44,30 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [asrPartialText, setAsrPartialText] = useState<string>('');
   const [asrFinalText, setAsrFinalText] = useState<string>('');
-  // 语音对话消息列表（用于"用户/助手"消息展示）
   const [chatMsgs, setChatMsgs] = useState<Array<{ role: 'user' | 'assistant'; text: string; sessionId?: string; sequence?: number; ts: number }>>([])
+
+  // 获取养殖池列表
+  const fetchPondList = async () => {
+    try {
+      const response = await fetch('/api/v1/get_pond_list', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error(`API请求失败: ${response.status}`);
+      const result = await response.json();
+      const list: PondListItem[] = Array.isArray(result) ? result : result.data;
+      if (Array.isArray(list) && list.length > 0) {
+        setPondList(list);
+        if (!selectedPondId) {
+          const defaultPond = list[3] || list[0];
+          setSelectedPondId(defaultPond.id);
+        }
+      }
+    } catch (error) {
+      console.error('获取养殖池列表失败:', error);
+    }
+  };
 
   // 获取摄像头列表
   const fetchCameraList = async () => {
@@ -55,7 +85,7 @@ function App() {
       }
 
       const result = await response.json();
-      
+
       if (result.success && result.data && Array.isArray(result.data)) {
         console.log('摄像头列表API调用成功:', result);
         setCameraList(result.data);
@@ -75,81 +105,64 @@ function App() {
     }
   };
 
-  // 模拟实时数据更新
-  useEffect(() => {
-    const updateData = async () => {
-      try {
-        // 异步调用传感器数据API
-        const newSensorData = await generateMockSensorData([]);
-        setSensorData(newSensorData);
-        
-        // 根据返回的数据动态生成传感器类型列表
-        // 只显示在 sensorTypeConfig 中配置的传感器类型
-        if (newSensorData && typeof newSensorData === 'object' && !Array.isArray(newSensorData)) {
-          const detectedSensorIds = Object.keys(newSensorData);
-          // 只保留在配置中定义的传感器类型
-          const detectedSensorTypes = detectedSensorIds
-            .filter(sensorId => sensorTypeConfig[sensorId]) // 只保留配置中有的传感器
-            .map(sensorId => {
-              const config = sensorTypeConfig[sensorId];
-              return {
-                id: sensorId,
-                ...config
-              };
-            });
-          
-          // 只有当检测到的传感器类型与当前不同时才更新，避免不必要的重渲染
-          if (detectedSensorTypes.length > 0) {
-            setSensorTypes(detectedSensorTypes);
-          }
-        }
-      } catch (error) {
-        console.error('更新传感器数据失败:', error);
-        // 如果API失败且还没有传感器类型，使用默认的4个传感器类型作为备用
-        if (sensorTypes.length === 0) {
-          setSensorTypes([
-            { id: 'temperature', name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] as [number, number] },
-            { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] as [number, number] },
-            { id: 'oxygen', name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] as [number, number] },
-            { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] as [number, number] },
-          ]);
+  // 拉取所有业务数据（根据选中的养殖池）
+  const updateData = useCallback(async (pondId: number) => {
+    try {
+      const newSensorData = await generateMockSensorData([], pondId);
+      setSensorData(newSensorData);
+
+      if (newSensorData && typeof newSensorData === 'object' && !Array.isArray(newSensorData)) {
+        const detectedSensorIds = Object.keys(newSensorData);
+        const detectedSensorTypes = detectedSensorIds
+          .filter(sensorId => sensorTypeConfig[sensorId])
+          .map(sensorId => ({ id: sensorId, ...sensorTypeConfig[sensorId] }));
+
+        if (detectedSensorTypes.length > 0) {
+          setSensorTypes(detectedSensorTypes);
         }
       }
-      
-      // 异步调用AI消息API
-      generateMockAIMessages().then(newMessages => {
-        setAiMessages(prev => {
-          return [...prev, ...newMessages].slice(-10); // 保持最新50条消息
-        });
-      }).catch(error => {
-        console.error('更新AI消息失败:', error);
-      });
-      
-      // 异步调用设备状态API
-      generateMockDeviceStatus().then(newDeviceStatus => {
-        setDeviceStatus(Array.isArray(newDeviceStatus) ? newDeviceStatus : []);
-      }).catch(error => {
-        console.error('更新设备状态失败:', error);
-        setDeviceStatus([]); // 确保在错误情况下也设置为空数组
-      });
-      
-      // 异步调用地理位置数据API
-      generateMockLocationData().then(newLocationData => {
-        setLocationData(Array.isArray(newLocationData) ? newLocationData : []);
-      }).catch(error => {
-        console.error('更新地理位置数据失败:', error);
-        setLocationData([]);
-      });
-    };
+    } catch (error) {
+      console.error('更新传感器数据失败:', error);
+      setSensorTypes(prev => prev.length > 0 ? prev : [
+        { id: 'temperature', name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] as [number, number] },
+        { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] as [number, number] },
+        { id: 'oxygen', name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] as [number, number] },
+        { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] as [number, number] },
+      ]);
+    }
 
-    // 初始数据
-    updateData();
-    
-    // 定期更新数据
-    const interval = setInterval(updateData, 3600000); // 每3600秒更新一次
-    
+    generateMockAIMessages(pondId).then(newMessages => {
+      setAiMessages(prev => [...prev, ...newMessages].slice(-10));
+    }).catch(error => console.error('更新AI消息失败:', error));
+
+    generateMockDeviceStatus(pondId).then(newDeviceStatus => {
+      setDeviceStatus(Array.isArray(newDeviceStatus) ? newDeviceStatus : []);
+    }).catch(error => {
+      console.error('更新设备状态失败:', error);
+      setDeviceStatus([]);
+    });
+
+    generateMockLocationData(pondId).then(newLocationData => {
+      setLocationData(Array.isArray(newLocationData) ? newLocationData : []);
+    }).catch(error => {
+      console.error('更新地理位置数据失败:', error);
+      setLocationData([]);
+    });
+  }, []);
+
+  // 初始加载养殖池列表
+  useEffect(() => {
+    fetchPondList();
+  }, []);
+
+  // 当养殖池选中后加载数据，切换时重新拉取
+  useEffect(() => {
+    if (!selectedPondId) return;
+    updateData(selectedPondId);
+    fetchCameraList();
+    const interval = setInterval(() => updateData(selectedPondId), 3600000);
     return () => clearInterval(interval);
-  }, []); // 空依赖数组，只在组件挂载时执行一次
+  }, [selectedPondId, updateData]);
 
   // 每秒更新头部时间显示
   useEffect(() => {
@@ -159,10 +172,6 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // 获取摄像头列表（只在组件挂载时调用一次，因为摄像头列表通常不会频繁变化）
-  useEffect(() => {
-    fetchCameraList();
-  }, []);
 
   /**
    * 处理 MicRecorderButton 组件通过 onDialog 上抛的“对话消息”（用户/助手）
@@ -204,34 +213,54 @@ function App() {
       {/* 主标题 */}
       <header className="app-header">
         <h1 className="app-title">日本陆上养殖生产管理AI控制中心</h1>
-        <div className="system-time">{currentTime.toLocaleString('ja-JP')}</div>
+        <div className="header-right">
+          <select
+            className="pond-selector"
+            value={selectedPondId}
+            onChange={(e) => setSelectedPondId(Number(e.target.value))}
+          >
+            {pondList.length === 0 ? (
+              <option value={0}>加载中...</option>
+            ) : (
+              pondList.map(pond => (
+                <option key={pond.id} value={pond.id}>{pond.name}</option>
+              ))
+            )}
+          </select>
+          <div className="system-time">{currentTime.toLocaleString('ja-JP')}</div>
+        </div>
       </header>
+
+      {/* 养殖区域信息独立行 */}
+      <section className="location-section location-top">
+        <LocationInfo locations={locationData} />
+      </section>
+
+      {/* 传感器独立行 */}
+      <section className="sensor-section">
+        <h2 className="section-title">传感器实时监控</h2>
+        <div className="sensor-grid">
+          {sensorTypes.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#cfefff', gridColumn: '1 / -1' }}>
+              <div className="loading-spinner"></div>
+              <p>正在加载传感器数据...</p>
+            </div>
+          ) : (
+            sensorTypes.map(sensor => (
+              <SensorChart
+                key={sensor.id}
+                sensorType={sensor}
+                data={sensorData[sensor.id] || []}
+              />
+            ))
+          )}
+        </div>
+      </section>
 
       {/* 主要内容区域 */}
       <main className="app-main">
         {/* 左侧区域 */}
         <div className="left-panel">
-          {/* 传感器数据区域 */}
-          <section className="sensor-section">
-            <h2 className="section-title">传感器实时监控</h2>
-            <div className="sensor-grid">
-              {sensorTypes.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#cfefff', gridColumn: '1 / -1' }}>
-                  <div className="loading-spinner"></div>
-                  <p>正在加载传感器数据...</p>
-                </div>
-              ) : (
-                sensorTypes.map(sensor => (
-                  <SensorChart
-                    key={sensor.id}
-                    sensorType={sensor}
-                    data={sensorData[sensor.id] || []}
-                  />
-                ))
-              )}
-            </div>
-          </section>
-
           {/* 设备状态列表 */}
           <section className="device-section">
             <DeviceStatus devices={deviceStatus} />
@@ -243,7 +272,7 @@ function App() {
           {/* 图像采集区域 */}
           <section className="camera-section">
             <h2 className="section-title">实时图像监控</h2>
-            <div className={`camera-grid camera-count-${cameraList.length === 0 ? 0 : cameraList.length <= 6 ? cameraList.length : 'many'}`}>
+            <div className="camera-grid">
               {cameraList.length === 0 ? (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#cfefff' }}>
                   <div className="loading-spinner"></div>
@@ -263,11 +292,6 @@ function App() {
           {/* AI决策窗口 */}
           <section className="ai-section">
             <AIDecisionChat messages={aiMessages} />
-          </section>
-
-          {/* 地理位置信息 */}
-          <section className="location-section">
-            <LocationInfo locations={locationData} />
           </section>
         </div>
       </main>

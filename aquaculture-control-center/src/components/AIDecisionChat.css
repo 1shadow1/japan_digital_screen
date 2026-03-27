@@ -2,13 +2,12 @@
  * AI决策聊天组件样式
  * =========================== */
 .ai-decision-chat {
-  background: linear-gradient(135deg, rgba(0, 31, 63, 0.95) 0%, rgba(0, 51, 102, 0.9) 100%);
-  border: 1px solid rgba(0, 168, 204, 0.4);
-  border-radius: 12px;
-  padding: 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   height: 100%;

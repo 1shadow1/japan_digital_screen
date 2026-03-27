@@ -48,7 +48,7 @@ const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data }) => {
   };
 
   const formatValue = (value: number) => {
-    return value.toFixed(2);
+    return Math.round(value * 10) / 10;
   };
 
   return (
@@ -90,6 +90,7 @@ const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data }) => {
               stroke="#41b3d3" 
               fontSize={10}
               domain={['dataMin - 1', 'dataMax + 1']}
+              tickFormatter={(v: number) => Math.round(v * 10) / 10 + ''}
             />
             {/* 阈值线 */}
             <ReferenceLine 

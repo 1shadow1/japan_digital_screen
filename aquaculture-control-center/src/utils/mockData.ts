@@ -3,27 +3,27 @@
 
 /**
  * API接口替换指南：
- * 
+ *
  * 1. 传感器数据接口
  * - 替换函数：generateMockSensorData
  * - 建议API端点：GET /api/sensors/realtime
  * - 数据格式：{ sensorId: string, timestamp: number, value: number }
- * 
+ *
  * 2. AI决策消息接口
  * - 替换函数：generateMockAIMessages
  * - 建议API端点：GET /api/ai/decisions/recent
  * - 数据格式：{ id: string, timestamp: number, type: string, message: string, action?: string }
- * 
+ *
  * 3. 设备状态接口
  * - 替换函数：generateMockDeviceStatus
  * - 建议API端点：GET /api/devices/status
  * - 数据格式：{ id: string, name: string, status: string, parameters: object, lastUpdate: number }
- * 
+ *
  * 4. 地理位置数据接口
  * - 替换函数：generateMockLocationData
  * - 建议API端点：GET /api/locations/ponds
  * - 数据格式：{ id: string, name: string, coordinates: [number, number], area: number, status: string }
- * 
+ *
  * 5. 摄像头画面接口
  * - 替换函数：generateMockCameraData (在CameraFeed组件中)
  * - 建议API端点：GET /api/cameras/:id/snapshot
@@ -51,8 +51,7 @@ const randomChoice = <T>(array: T[]): T => {
  * - 设置 5 秒超时并对响应进行格式校验
  * - 将后端返回的数组格式转换为按传感器ID分组的对象格式
  */
-export const generateMockSensorData = async (sensorTypes: any[]) => {
-  // 通过相对路径交由 Vite 代理处理跨域
+export const generateMockSensorData = async (sensorTypes: any[], pondId?: number) => {
   const response = await fetch('/api/sensors/realtime', {
     method: 'GET',
     headers: {
@@ -68,35 +67,35 @@ export const generateMockSensorData = async (sensorTypes: any[]) => {
   }
 
   const result = await response.json();
-  
+
   if (result.success && result.data) {
     console.log('传感器数据API调用成功:', result);
-    
+
     // 如果返回的是数组，需要转换为按传感器ID分组的对象格式
     if (Array.isArray(result.data)) {
       const groupedData: { [key: string]: Array<{ timestamp: number; value: number; time: string }> } = {};
-      
+
       result.data.forEach((item: any) => {
         const sensorId = item.sensorId || item.id;
         if (!sensorId) {
           console.warn('传感器数据缺少sensorId:', item);
           return;
         }
-        
+
         if (!groupedData[sensorId]) {
           groupedData[sensorId] = [];
         }
-        
+
         groupedData[sensorId].push({
           timestamp: item.timestamp,
           value: item.value,
           time: new Date(item.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
         });
       });
-      
+
       return groupedData;
     }
-    
+
     // 如果已经是对象格式，直接返回
     return result.data;
   } else {
@@ -112,8 +111,7 @@ export const generateMockSensorData = async (sensorTypes: any[]) => {
  * 输出：返回后端的 data 数组；如失败抛出异常
  * 关键逻辑：改为相对路径 /api/ai/decisions/recent，并移除不必要的 Content-Type
  */
-export const generateMockAIMessages = async () => {
-  // 调用真实的AI助手API接口（通过代理消除跨域）
+export const generateMockAIMessages = async (pondId?: number) => {
   const response = await fetch('/api/ai/decisions/recent', {
     method: 'GET',
     headers: {
@@ -128,7 +126,7 @@ export const generateMockAIMessages = async () => {
   }
 
   const result = await response.json();
-  
+
   if (result.success && result.data) {
     return result.data;
   } else {
@@ -144,8 +142,7 @@ export const generateMockAIMessages = async () => {
  * 输出：返回后端的 data 数组；如失败抛出异常
  * 关键逻辑：相对路径 /api/devices/status；只保留 Accept 以减少预检
  */
-export const generateMockDeviceStatus = async () => {
-  // 调用真实的设备状态API接口（通过代理消除跨域）
+export const generateMockDeviceStatus = async (pondId?: number) => {
   const response = await fetch('/api/devices/status', {
     method: 'GET',
     headers: {
@@ -160,7 +157,7 @@ export const generateMockDeviceStatus = async () => {
   }
 
   const result = await response.json();
-  
+
   if (result.success && result.data) {
     return result.data;
   } else {
@@ -178,9 +175,8 @@ export const generateMockDeviceStatus = async () => {
  * 输出：转换后的位置数据数组；如失败则回退到本地模拟数据
  * 关键逻辑：相对路径 /api/location/data；移除不必要的 Content-Type 以减少预检
  */
-export const generateMockLocationData = async () => {
+export const generateMockLocationData = async (pondId?: number) => {
   try {
-    // 调用后端API（通过代理）获取地理位置数据
     const response = await fetch('/api/location/data', {
       method: 'GET',
       headers: {
@@ -195,10 +191,10 @@ export const generateMockLocationData = async () => {
     }
 
     const result = await response.json();
-    
+
     if (result.success && result.data) {
       console.log('地理位置数据API调用成功:', result);
-      
+
       // 将API数据转换为前端需要的格式
       const transformedData = result.data.map((item: any, index: number) => {
         const statusMap: { [key: string]: string } = {
@@ -206,16 +202,16 @@ export const generateMockLocationData = async () => {
           'maintenance': '检修中',
           'operational': '正常运行'
         };
-        
+
         const statusColorMap: { [key: string]: string } = {
           '正常运行': '#20B2AA',
           '检修中': '#ff6b35',
           '投食中': '#41b3d3',
           '清洁中': '#ffa500'
         };
-        
+
         const status = statusMap[item.status] || '正常运行';
-        
+
         return {
           id: item.id || `location_${index + 1}`,
           name: item.name || `位置${index + 1}`,
@@ -230,15 +226,15 @@ export const generateMockLocationData = async () => {
           coordinates_str: `${(item.coordinates?.lat || 35.6762).toFixed(6)}, ${(item.coordinates?.lng || 139.6503).toFixed(6)}`
         };
       });
-      
+
       return transformedData;
     } else {
       throw new Error('API返回数据格式错误');
     }
-    
+
   } catch (error) {
     console.error('地理位置数据API调用失败，使用备用模拟数据:', error);
-    
+
     // 备用模拟数据生成逻辑（与原函数相同）
     const locations = [
       { name: '1号养殖池', area: 15, region: 'A区' },
@@ -250,7 +246,7 @@ export const generateMockLocationData = async () => {
       // { name: '孵化池-2', area: 750, region: 'D区' },
       // { name: '暂养池', area: 1200, region: 'E区' }
     ];
-    
+
     const baseCoordinates = { lat: 35.6762, lng: 139.6503 }; // 东京附近
     const statuses = ['正常运行', '投食中', '清洁中', '检修中'];
     const statusColors = {
@@ -259,14 +255,14 @@ export const generateMockLocationData = async () => {
       '清洁中': '#ffa500',
       '检修中': '#ff6b35'
     };
-    
+
     return locations.map((location, index) => {
       const status = randomChoice(statuses);
       const coordinates = {
         lat: baseCoordinates.lat + randomBetween(-0.01, 0.01),
         lng: baseCoordinates.lng + randomBetween(-0.01, 0.01)
       };
-      
+
       return {
         id: `location_${index + 1}`,
         name: location.name,

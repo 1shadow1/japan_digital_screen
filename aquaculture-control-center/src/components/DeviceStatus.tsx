@@ -27,6 +27,19 @@ const FAULT_STATUS_COLOR = '#e74c3c';
 const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
   const [filter, setFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [expandedDevices, setExpandedDevices] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (deviceId: string) => {
+    setExpandedDevices(prev => {
+      const next = new Set(prev);
+      if (next.has(deviceId)) {
+        next.delete(deviceId);
+      } else {
+        next.add(deviceId);
+      }
+      return next;
+    });
+  };
 
   // 过滤和搜索设备（离线 = 非 online 的设备）
   const filteredDevices = devices.filter(device => {
@@ -140,7 +153,7 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
             return (
             <div key={device.id} className={`device-item ${online ? device.status.replace(/\s+/g, '-').toLowerCase() : 'error'}`}>
               {/* 设备基本信息 */}
-              <div className="device-main">
+              <div className="device-main" onClick={() => toggleExpand(device.id)}>
                 <div className="device-icon">
                   {getDeviceIcon(device.type)}
                 </div>
@@ -161,19 +174,22 @@ const DeviceStatus: React.FC<DeviceStatusProps> = ({ devices }) => {
                     {displayStatus}
                   </span>
                 </div>
+                <span className={`expand-arrow ${expandedDevices.has(device.id) ? 'expanded' : ''}`}>▸</span>
               </div>
 
-              {/* 设备参数 */}
-              <div className="device-parameters">
-                {Object.entries(device.parameters).map(([key, value]) => (
-                  <div key={key} className="parameter-item">
-                    <span className="parameter-key">{key}:</span>
-                    <span className="parameter-value">
-                      {typeof value === 'number' ? value.toFixed(1) : value}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {/* 设备参数（默认折叠） */}
+              {expandedDevices.has(device.id) && (
+                <div className="device-parameters">
+                  {Object.entries(device.parameters).map(([key, value]) => (
+                    <div key={key} className="parameter-item">
+                      <span className="parameter-key">{key}:</span>
+                      <span className="parameter-value">
+                        {typeof value === 'number' ? value.toFixed(1) : value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* 状态指示器 */}
               <div className="device-status-bar">
