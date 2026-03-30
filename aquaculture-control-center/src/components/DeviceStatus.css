@@ -2,13 +2,12 @@
  * AI决策聊天组件样式
  * =========================== */
 .ai-decision-chat {
-  background: linear-gradient(135deg, rgba(0, 31, 63, 0.95) 0%, rgba(0, 51, 102, 0.9) 100%);
-  border: 1px solid rgba(0, 168, 204, 0.4);
-  border-radius: 12px;
-  padding: 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -288,13 +287,12 @@
  * 设备状态组件样式
  * =========================== */
 .device-status {
-  background: linear-gradient(135deg, rgba(0, 31, 63, 0.95) 0%, rgba(0, 51, 102, 0.9) 100%);
-  border: 1px solid rgba(0, 168, 204, 0.4);
-  border-radius: 12px;
-  padding: 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -494,7 +492,18 @@
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 0.8rem;
+  cursor: pointer;
+}
+
+.expand-arrow {
+  color: #41b3d3;
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.expand-arrow.expanded {
+  transform: rotate(90deg);
 }
 
 .device-icon {
@@ -565,6 +574,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
+  margin-top: 0.8rem;
   margin-bottom: 0.5rem;
 }
 

@@ -1,2 +1,6 @@
 aquaculture-control-center/node_modules/
 aquaculture-control-center/dist/
+
+README.local.md
+.history/
+.cursor/

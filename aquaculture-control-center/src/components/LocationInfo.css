@@ -2,13 +2,12 @@
  * 地理位置信息组件样式
  * =========================== */
 .location-info {
-  background: linear-gradient(135deg, rgba(0, 31, 63, 0.95) 0%, rgba(0, 51, 102, 0.9) 100%);
-  border: 1px solid rgba(0, 168, 204, 0.4);
-  border-radius: 12px;
-  padding: 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -16,11 +15,16 @@
 
 /* 地理位置头部 */
 .location-header {
-  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
 }
 
 .location-header .section-title {
-  margin-bottom: 0.8rem;
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .region-overview {
@@ -65,28 +69,20 @@
   opacity: 0.9;
 }
 
-/* 控制面板 */
-.location-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  gap: 1rem;
-}
-
-.region-filter, .sort-options {
+/* 区域筛选 */
+.region-filter {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.region-filter label, .sort-options label {
+.region-filter label {
   font-size: 0.8rem;
   color: #20B2AA;
   white-space: nowrap;
 }
 
-.region-select, .sort-select {
+.region-select {
   padding: 0.4rem 0.8rem;
   border: 1px solid rgba(65, 179, 211, 0.4);
   background: rgba(0, 31, 63, 0.8);
@@ -97,13 +93,13 @@
   transition: all 0.3s ease;
 }
 
-.region-select:focus, .sort-select:focus {
+.region-select:focus {
   outline: none;
   border-color: #41b3d3;
   box-shadow: 0 0 8px rgba(65, 179, 211, 0.3);
 }
 
-.region-select option, .sort-select option {
+.region-select option {
   background: rgba(0, 31, 63, 0.95);
   color: white;
 }
@@ -114,6 +110,30 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(65, 179, 211, 0.5) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 顶部行横向布局 */
+.location-top .location-list {
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.location-top .location-list::-webkit-scrollbar {
+  display: none;
+}
+
+.location-top .location-item {
+  flex: 1 0 220px;
+  margin-bottom: 0;
+}
+
+.location-top .detail-grid {
+  grid-template-columns: 1fr;
 }
 
 .location-list::-webkit-scrollbar {
@@ -318,12 +338,6 @@
 @media (max-width: 1200px) {
   .region-overview {
     justify-content: center;
-  }
-  
-  .location-controls {
-    flex-direction: column;
-    gap: 0.8rem;
-    align-items: stretch;
   }
   
   .detail-grid {

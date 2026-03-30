@@ -15,12 +15,17 @@ interface SensorChartProps {
     value: number;
     time: string;
   }>;
+  prediction?: {
+    trend: 'up' | 'down' | 'stable';
+    predicted_value?: number;
+    analysis_text?: string;
+  };
 }
 
-const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data }) => {
-  const { currentValue, isAlert, trend } = useMemo(() => {
+const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data, prediction }) => {
+  const { currentValue, isAlert, calculatedTrend } = useMemo(() => {
     if (!data || data.length === 0) {
-      return { currentValue: 0, isAlert: false, trend: 'stable' };
+      return { currentValue: 0, isAlert: false, calculatedTrend: 'stable' };
     }
     
     const current = data[data.length - 1].value;
@@ -35,12 +40,14 @@ const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data }) => {
     return {
       currentValue: current,
       isAlert: isOutOfThreshold,
-      trend: trendDirection
+      calculatedTrend: trendDirection
     };
   }, [data, sensorType.threshold]);
 
+  const activeTrend = prediction?.trend || calculatedTrend;
+
   const getTrendIcon = () => {
-    switch (trend) {
+    switch (activeTrend) {
       case 'up': return '↗️';
       case 'down': return '↘️';
       default: return '➡️';
@@ -48,7 +55,7 @@ const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data }) => {
   };
 
   const formatValue = (value: number) => {
-    return value.toFixed(2);
+    return Math.round(value * 10) / 10;
   };
 
   return (
@@ -61,9 +68,16 @@ const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data }) => {
             {formatValue(currentValue)}
           </span>
           <span className="sensor-unit">{sensorType.unit}</span>
-          <span className="trend-icon">{getTrendIcon()}</span>
+          <span className="trend-icon" title={prediction?.analysis_text}>{getTrendIcon()}</span>
         </div>
       </div>
+
+      {/* 预测与分析 */}
+      {prediction && prediction.predicted_value !== undefined && (
+        <div className="prediction-info" style={{ fontSize: '11px', color: '#88d7f4', marginBottom: '4px' }}>
+          预测值: {formatValue(prediction.predicted_value)} {sensorType.unit} ({prediction.trend === 'up' ? '上升' : prediction.trend === 'down' ? '下降' : '平稳'})
+        </div>
+      )}
 
       {/* 阈值显示 */}
       <div className="threshold-info">
@@ -90,6 +104,7 @@ const SensorChart: React.FC<SensorChartProps> = ({ sensorType, data }) => {
               stroke="#41b3d3" 
               fontSize={10}
               domain={['dataMin - 1', 'dataMax + 1']}
+              tickFormatter={(v: number) => Math.round(v * 10) / 10 + ''}
             />
             {/* 阈值线 */}
             <ReferenceLine 

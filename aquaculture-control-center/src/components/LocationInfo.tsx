@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './LocationInfo.css';
 
 interface Location {
@@ -24,24 +24,57 @@ interface LocationInfoProps {
 
 const LocationInfo: React.FC<LocationInfoProps> = ({ locations }) => {
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'area' | 'fishCount'>('name');
+  const listRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const rafRef = useRef<number>(0);
+  const directionRef = useRef<1 | -1>(1);
+  const waitTimerRef = useRef<number>(0);
 
   // 获取所有区域
   const regions = Array.from(new Set(locations.map(loc => loc.region)));
 
-  // 过滤和排序
-  const filteredAndSortedLocations = locations
-    .filter(location => selectedRegion === 'all' || location.region === selectedRegion)
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'area':
-          return b.area - a.area;
-        case 'fishCount':
-          return b.fishCount - a.fishCount;
-        default:
-          return a.name.localeCompare(b.name);
-      }
-    });
+  // 过滤
+  const filteredLocations = locations
+    .filter(location => selectedRegion === 'all' || location.region === selectedRegion);
+
+  // 自动滚动（到两端停顿后反向）
+  const autoScroll = useCallback(() => {
+    const el = listRef.current;
+    if (!el || pausedRef.current) {
+      rafRef.current = requestAnimationFrame(autoScroll);
+      return;
+    }
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 0) {
+      rafRef.current = requestAnimationFrame(autoScroll);
+      return;
+    }
+
+    if (waitTimerRef.current > 0) {
+      waitTimerRef.current--;
+      rafRef.current = requestAnimationFrame(autoScroll);
+      return;
+    }
+
+    el.scrollLeft += 0.5 * directionRef.current;
+
+    if (el.scrollLeft >= maxScroll) {
+      el.scrollLeft = maxScroll;
+      directionRef.current = -1;
+      waitTimerRef.current = 120; // ~2秒 @60fps
+    } else if (el.scrollLeft <= 0) {
+      el.scrollLeft = 0;
+      directionRef.current = 1;
+      waitTimerRef.current = 120;
+    }
+
+    rafRef.current = requestAnimationFrame(autoScroll);
+  }, []);
+
+  useEffect(() => {
+    rafRef.current = requestAnimationFrame(autoScroll);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [autoScroll]);
 
   // 获取区域统计
   const getRegionStats = () => {
@@ -77,26 +110,9 @@ const LocationInfo: React.FC<LocationInfoProps> = ({ locations }) => {
 
   return (
     <div className="location-info">
-      {/* 地理位置信息头部 */}
+      {/* 头部：标题 + 区域筛选 */}
       <div className="location-header">
         <h2 className="section-title">养殖区域信息</h2>
-        
-        {/* 区域统计概览 */}
-        <div className="region-overview">
-          {regionStats.map(stat => (
-            <div key={stat.region} className="region-stat">
-              <div className="region-name">{stat.region}</div>
-              <div className="region-metrics">
-                <span className="metric">{stat.count}个池</span>
-                <span className="metric">{stat.healthRate}%正常</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 控制面板 */}
-      <div className="location-controls">
         <div className="region-filter">
           <label htmlFor="region-select">区域：</label>
           <select
@@ -111,25 +127,29 @@ const LocationInfo: React.FC<LocationInfoProps> = ({ locations }) => {
             ))}
           </select>
         </div>
-        
-        <div className="sort-options">
-          <label htmlFor="sort-select">排序：</label>
-          <select
-            id="sort-select"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'name' | 'area' | 'fishCount')}
-            className="sort-select"
-          >
-            <option value="name">名称</option>
-            <option value="area">面积</option>
-            <option value="fishCount">鱼类数量</option>
-          </select>
-        </div>
+      </div>
+
+      {/* 区域统计概览 */}
+      <div className="region-overview">
+        {regionStats.map(stat => (
+          <div key={stat.region} className="region-stat">
+            <div className="region-name">{stat.region}</div>
+            <div className="region-metrics">
+              <span className="metric">{stat.count}个池</span>
+              <span className="metric">{stat.healthRate}%正常</span>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 位置列表 */}
-      <div className="location-list">
-        {filteredAndSortedLocations.map(location => (
+      <div
+        className="location-list"
+        ref={listRef}
+        onMouseEnter={() => { pausedRef.current = true; }}
+        onMouseLeave={() => { pausedRef.current = false; }}
+      >
+        {filteredLocations.map(location => (
           <div key={location.id} className="location-item">
             {/* 位置基本信息 */}
             <div className="location-main">
@@ -156,7 +176,7 @@ const LocationInfo: React.FC<LocationInfoProps> = ({ locations }) => {
                   <span className="detail-value">{location.area.toLocaleString()} m²</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">鱼量：</span>
+                  <span className="detail-label">虾量：</span>
                   <span className="detail-value">{location.fishCount.toLocaleString()}</span>
                 </div>
                 <div className="detail-item">

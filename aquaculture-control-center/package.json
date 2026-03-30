@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && cp -r ./dist/* /srv/japan_digital_screen",
+    "build": "tsc -b && vite build ",
+    "bp": "tsc -b && vite build && tar czf - --no-xattrs -C dist . | ssh fish@8.216.43.146 \"tar xzf - -C /srv/japan_digital_screen\"",
     "build:prod": "tsc -b && BUILD_MODE=prod vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -1,323 +1,164 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './CameraFeed.css';
 
-interface CameraFeedProps {
-  cameraId: number;
+export interface CameraData {
+	id: number;
+	name?: string;
+	location?: string;
+	status?: string;
+	quality?: string;
+	resolution?: string;
+	fps?: number;
+	lastUpdate?: number;
+	lastUpdateTime?: string;
+	temperature?: number | null;
+	connectivity?: number;
+	recording?: boolean;
+	nightVision?: boolean;
+	motionDetection?: boolean;
 }
 
-interface CameraData {
-  id: number;
-  name: string;
-  location: string;
-  status: string;
-  quality: string;
-  resolution: string;
-  fps: number;
-  lastUpdate: number;
-  lastUpdateTime: string;
-  temperature: number | null;
-  connectivity: number;
-  recording: boolean;
-  nightVision: boolean;
-  motionDetection: boolean;
+export interface CameraFeedProps {
+	pondId: number;
+	camera: CameraData;
+	refreshTrigger: number;
 }
 
-/**
- * getCameraData
- * 功能：通过后端接口获取摄像头状态信息
- * 输入：cameraId 摄像头ID
- * 输出：CameraData 对象；如失败抛出异常
- * 关键逻辑：
- * - 使用相对路径 /api/cameras/:id/status，经由 Vite 代理转发到后端；避免浏览器跨域拦截
- * - GET 请求不设置 Content-Type，减少 CORS 预检的触发；保留 5 秒超时
- */
-const getCameraData = async (cameraId: number): Promise<CameraData> => {
-  // 通过相对路径交由 Vite 代理处理跨域
-  const response = await fetch(`/api/cameras/${cameraId}/status`, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-    },
-    signal: AbortSignal.timeout(5000), // 5秒超时
-  });
+const CameraFeed: React.FC<CameraFeedProps> = ({ pondId, camera, refreshTrigger }) => {
+	const [imageUrl, setImageUrl] = useState<string>('');
+	const [imageLoading, setImageLoading] = useState<boolean>(false);
+	const [imageError, setImageError] = useState<boolean>(false);
+	const [retryTrigger, setRetryTrigger] = useState<number>(0);
 
-  if (!response.ok) {
-    throw new Error(`API请求失败: ${response.status}`);
-  }
+	const actualCameraId = camera.id || (camera as any).device_id || (camera as any).camera_id;
+	const isOffline = camera.status === '离线' || camera.status === 'offline';
 
-  const result = await response.json();
-  
-  if (result.success && result.data) {
-    // 将API数据转换为前端需要的格式
-    const apiData = result.data;
-    return {
-      id: apiData.id,
-      name: apiData.name,
-      location: apiData.location,
-      status: apiData.status,
-      quality: apiData.quality,
-      resolution: apiData.resolution,
-      fps: apiData.fps,
-      lastUpdate: apiData.lastUpdate,
-      lastUpdateTime: apiData.lastUpdateTime,
-      temperature: apiData.temperature,
-      connectivity: apiData.connectivity,
-      recording: apiData.recording,
-      nightVision: apiData.nightVision,
-      motionDetection: apiData.motionDetection
-    };
-  } else {
-    throw new Error('API返回数据格式错误');
-  }
-};
+	const fetchImage = async () => {
+		if (!actualCameraId || isOffline) return;
 
-/**
- * 从API获取摄像头图片URL
- * @param cameraId 摄像头ID
- * @returns Promise<string> 图片URL或错误信息
- */
-const fetchCameraImage = async (cameraId: number): Promise<string> => {
-  try {
-    // 使用相对路径并通过代理解决跨域；移除不必要的 Content-Type
-    const response = await fetch(`/api/cameras/${cameraId}/image`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      signal: AbortSignal.timeout(8000), // 8秒超时，图片加载需要更长时间
-    });
+		setImageLoading(true);
+		setImageError(false);
 
-    if (!response.ok) {
-      if (response.status === 503) {
-        throw new Error('摄像头离线');
-      }
-      throw new Error(`获取图片失败: ${response.status}`);
-    }
+		try {
+			const res = await fetch(`/api/v1/ponds/${pondId}/cameras/${actualCameraId}/image`, {
+				method: 'GET',
+				headers: { Accept: 'image/*' },
+				signal: AbortSignal.timeout(10000),
+			});
 
-    // 解析JSON响应
-    const result = await response.json();
-    
-    if (result.success && result.data && result.data.imageUrl) {
-      console.log('摄像头图片API调用成功:', result);
-      // 直接返回API提供的图片URL
-      return result.data.imageUrl;
-    } else {
-      throw new Error('API返回数据格式错误或缺少imageUrl');
-    }
-    
-  } catch (error) {
-    console.warn(`摄像头 ${cameraId} 图片获取失败:`, error);
-    throw error;
-  }
-};
+			if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
+			const blob = await res.blob();
+			if (blob.size === 0) throw new Error('Empty Blob');
 
-const CameraFeed: React.FC<CameraFeedProps> = ({ cameraId }) => {
-  const [cameraData, setCameraData] = useState<CameraData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
+			const newUrl = URL.createObjectURL(blob);
+			setImageUrl(prev => {
+				if (prev) URL.revokeObjectURL(prev);
+				return newUrl;
+			});
+		} catch (err) {
+			console.error('获取摄像头图片失败:', err);
+			setImageError(true);
+		} finally {
+			setImageLoading(false);
+		}
+	};
 
-  // 加载摄像头数据
-  const loadCameraData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getCameraData(cameraId);
-      setCameraData(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载摄像头数据失败');
-      console.error('加载摄像头数据失败:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+	const lastFetchRef = useRef<string>('');
 
-  // 加载摄像头图片
-  const loadCameraImage = async () => {
-    if (!cameraData || cameraData.status !== '在线') {
-      setImageUrl(null);
-      setImageError('摄像头离线');
-      return;
-    }
+	useEffect(() => {
+		console.warn('fetchImage', refreshTrigger, retryTrigger);
+		const currentKey = `${refreshTrigger}-${retryTrigger}`;
 
-    try {
-      setImageLoading(true);
-      setImageError(null);
-      
-      // 清理之前的URL（只有当它是ObjectURL时才需要revoke）
-      if (imageUrl && imageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(imageUrl);
-      }
-      
-      const newImageUrl = await fetchCameraImage(cameraId);
-      setImageUrl(newImageUrl);
-    } catch (err) {
-      setImageError(err instanceof Error ? err.message : '加载图片失败');
-      console.error('加载摄像头图片失败:', err);
-    } finally {
-      setImageLoading(false);
-    }
-  };
+		if (!refreshTrigger || lastFetchRef.current === currentKey) return;
 
-  // 初始化数据加载
-  useEffect(() => {
-    loadCameraData();
-  }, [cameraId]);
+		lastFetchRef.current = currentKey;
+		fetchImage();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [refreshTrigger, retryTrigger]);
 
-  // 当摄像头数据更新后，加载图片
-  useEffect(() => {
-    if (cameraData) {
-      loadCameraImage();
-    }
-  }, [cameraData]);
+	// 组件卸载时销毁最终的 Blob URL
+	useEffect(() => {
+		return () => {
+			setImageUrl(prev => {
+				if (prev) URL.revokeObjectURL(prev);
+				return '';
+			});
+		};
+	}, []);
 
-  // 定时更新数据和图片（每30秒）
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadCameraData();
-    }, 30000); // 30秒更新一次
+	return (
+		<div className={`camera-feed ${isOffline ? 'offline' : ''}`}>
+			{/* 摄像头信息头部 */}
+			<div className='camera-header'>
+				<div className='camera-info'>
+					<h4 className='camera-name'>{camera.name || `摄像头 ${actualCameraId || '未知'}`}</h4>
+					<span className='camera-location'>{camera.location || '未知位置'}</span>
+				</div>
+				<div className='camera-status'>
+					<span className={`status-indicator ${!isOffline ? 'online' : 'offline'}`}>
+						{camera.status || '未知状态'}
+					</span>
+				</div>
+			</div>
 
-    return () => clearInterval(interval);
-  }, [cameraId]);
+			{/* 图像显示区域 */}
+			<div className='camera-display'>
+				<div className='image-container'>
+					{!isOffline ? (
+						<div className='image-wrapper'>
+							{imageLoading && (
+								<div className='image-loading-overlay'>
+									<div className='spinner'></div>
+									<p>正在拉取新图片...</p>
+								</div>
+							)}
 
-  // 组件卸载时清理URL（只清理ObjectURL）
-  useEffect(() => {
-    return () => {
-      if (imageUrl && imageUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(imageUrl);
-      }
-    };
-  }, [imageUrl]);
+							{imageError ? (
+								<div className='image-error-overlay'>
+									<div className='error-content'>
+										<span className='error-icon'>📷</span>
+										<p>图片获取失败</p>
+										<button
+											onClick={() => setRetryTrigger(prev => prev + 1)}
+											className='retry-image-button'
+										>
+											重新尝试
+										</button>
+									</div>
+								</div>
+							) : imageUrl ? (
+								<img
+									src={imageUrl}
+									alt={`摄像头 ${actualCameraId} 画面`}
+									className='camera-image'
+									onError={() => setImageError(true)}
+								/>
+							) : null}
+						</div>
+					) : (
+						<div className='offline-placeholder'>
+							<div className='offline-content'>
+								<span className='offline-icon'>📷</span>
+								<h3>摄像头离线</h3>
+								<p>设备当前不可用</p>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
 
-  // 如果数据还未加载，显示加载状态
-  if (loading) {
-    return (
-      <div className="camera-feed loading">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>正在加载摄像头数据...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 如果加载出错，显示错误信息
-  if (error || !cameraData) {
-    return (
-      <div className="camera-feed error">
-        <div className="error-message">
-          <h3>⚠️ 加载失败</h3>
-          <p>{error || '无法获取摄像头数据'}</p>
-          <button onClick={loadCameraData} className="retry-button">
-            重试
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`camera-feed ${cameraData.status === '离线' ? 'offline' : ''}`}>
-      {/* 摄像头信息头部 */}
-      <div className="camera-header">
-        <div className="camera-info">
-          <h4 className="camera-name">{cameraData.name}</h4>
-          <span className="camera-location">{cameraData.location}</span>
-        </div>
-        <div className="camera-status">
-          <span className={`status-indicator ${cameraData.status === '在线' ? 'online' : 'offline'}`}>
-            {cameraData.status}
-          </span>
-        </div>
-      </div>
-
-      {/* 图像显示区域 */}
-      <div className="camera-display">
-        <div className="image-container">
-          {cameraData.status === '在线' ? (
-            <div className="image-wrapper">
-              {imageLoading && (
-                <div className="image-loading-overlay">
-                  <div className="spinner"></div>
-                  <p>正在加载图片...</p>
-                </div>
-              )}
-              
-              {imageError && !imageLoading && (
-                <div className="image-error-overlay">
-                  <div className="error-content">
-                    <span className="error-icon">📷</span>
-                    <p>{imageError}</p>
-                    <button 
-                      onClick={loadCameraImage} 
-                      className="retry-image-button"
-                    >
-                      重新加载图片
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {imageUrl && !imageError && (
-                <img
-                  src={imageUrl}
-                  alt={`摄像头 ${cameraId} 实时画面`}
-                  className="camera-image"
-                  onError={() => {
-                    setImageError('图片加载失败');
-                    console.error('图片显示错误');
-                  }}
-                  onLoad={() => {
-                    console.log('图片加载成功');
-                  }}
-                />
-              )}
-              
-              {/* 实时数据叠加层 */}
-              <div className="overlay-info">
-                <div className="overlay-item">
-                  <span className="label">温度:</span>
-                  <span className="value">
-                    {cameraData.temperature ? `${cameraData.temperature.toFixed(1)}°C` : 'N/A'}
-                  </span>
-                </div>
-                <div className="overlay-item">
-                  <span className="label">连接:</span>
-                  <span className="value">{cameraData.connectivity}%</span>
-                </div>
-                <div className="overlay-item">
-                  <span className="label">FPS:</span>
-                  <span className="value">{cameraData.fps}</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="offline-placeholder">
-              <div className="offline-content">
-                <span className="offline-icon">📷</span>
-                <h3>摄像头离线</h3>
-                <p>设备当前不可用</p>
-                <button onClick={loadCameraData} className="reconnect-button">
-                  尝试重连
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 技术参数 */}
-      <div className="camera-footer">
-        <div className="tech-info">
-          <span className="resolution">{cameraData.resolution}</span>
-          <span className="separator">|</span>
-          <span className="update-time">{cameraData.lastUpdateTime}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
+			{/* 技术参数 */}
+			<div className='camera-footer'>
+				<div className='tech-info'>
+					<span className='resolution'>{camera.resolution || '1080P'}</span>
+					<span className='separator'>|</span>
+					<span className='update-time'>
+						{camera.lastUpdateTime || new Date().toLocaleTimeString('ja-JP')}
+					</span>
+				</div>
+			</div>
+		</div>
+	);
+};;;
 
 export default CameraFeed;

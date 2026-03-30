@@ -27,7 +27,7 @@ export default defineConfig({
   server: {
     port: 8083,
     strictPort: true,
-    // host: true,
+    host: true,
     /**
      * 代理配置（开发环境消除跨域）：
      * - 将以 /api 开头的请求代理到后端服务 http://8.216.33.92:5002
@@ -38,9 +38,19 @@ export default defineConfig({
      */
     proxy: {
       "/api": {
-        target: "http://8.216.33.92:5002",
+        target: "http://8.216.43.146:5002",
         changeOrigin: true,
         secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyRes', (proxyRes, _req, _res) => {
+            if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+              // no-transform 让 compression 中间件跳过 gzip，避免缓冲 SSE
+              proxyRes.headers['cache-control'] = 'no-transform';
+              proxyRes.headers['x-accel-buffering'] = 'no';
+              delete proxyRes.headers['content-encoding'];
+            }
+          });
+        }
       },
     },
   },
