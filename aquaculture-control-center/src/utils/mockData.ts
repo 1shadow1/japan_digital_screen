@@ -51,14 +51,12 @@ const randomChoice = <T>(array: T[]): T => {
  * - 设置 5 秒超时并对响应进行格式校验
  * - 将后端返回的数组格式转换为按传感器ID分组的对象格式
  */
-export const generateMockSensorData = async (sensorTypes: any[], pondId?: number) => {
-  const response = await fetch('/api/sensors/realtime', {
+export const generateMockSensorData = async (sensorTypes: any[], pondId: number = 1) => {
+  const response = await fetch(`/api/v1/ponds/${pondId}/sensors/realtime`, {
     method: 'GET',
     headers: {
-      // 'Accept' 为简单请求头，不会触发预检
       'Accept': 'application/json',
     },
-    // 设置超时时间
     signal: AbortSignal.timeout(5000)
   });
 
@@ -68,10 +66,9 @@ export const generateMockSensorData = async (sensorTypes: any[], pondId?: number
 
   const result = await response.json();
 
-  if (result.success && result.data) {
+  if (result.code === 200 && result.data) {
     console.log('传感器数据API调用成功:', result);
 
-    // 如果返回的是数组，需要转换为按传感器ID分组的对象格式
     if (Array.isArray(result.data)) {
       const groupedData: { [key: string]: Array<{ timestamp: number; value: number; time: string }> } = {};
 
@@ -96,7 +93,6 @@ export const generateMockSensorData = async (sensorTypes: any[], pondId?: number
       return groupedData;
     }
 
-    // 如果已经是对象格式，直接返回
     return result.data;
   } else {
     throw new Error('API返回数据格式错误');
@@ -111,13 +107,12 @@ export const generateMockSensorData = async (sensorTypes: any[], pondId?: number
  * 输出：返回后端的 data 数组；如失败抛出异常
  * 关键逻辑：改为相对路径 /api/ai/decisions/recent，并移除不必要的 Content-Type
  */
-export const generateMockAIMessages = async (pondId?: number) => {
-  const response = await fetch('/api/ai/decisions/recent', {
+export const generateMockAIMessages = async (pondId: number = 1) => {
+  const response = await fetch(`/api/v1/ponds/${pondId}/ai-decisions/realtime`, {
     method: 'GET',
     headers: {
       'Accept': 'application/json'
     },
-    // 设置超时时间
     signal: AbortSignal.timeout(5000) // 5秒超时
   });
 
@@ -127,7 +122,7 @@ export const generateMockAIMessages = async (pondId?: number) => {
 
   const result = await response.json();
 
-  if (result.success && result.data) {
+  if (result.code === 200 && result.data) {
     return result.data;
   } else {
     throw new Error('API返回数据格式错误');
@@ -142,13 +137,12 @@ export const generateMockAIMessages = async (pondId?: number) => {
  * 输出：返回后端的 data 数组；如失败抛出异常
  * 关键逻辑：相对路径 /api/devices/status；只保留 Accept 以减少预检
  */
-export const generateMockDeviceStatus = async (pondId?: number) => {
-  const response = await fetch('/api/devices/status', {
+export const generateMockDeviceStatus = async (pondId: number = 1) => {
+  const response = await fetch(`/api/v1/ponds/${pondId}/devices`, {
     method: 'GET',
     headers: {
       'Accept': 'application/json'
     },
-    // 设置超时时间
     signal: AbortSignal.timeout(5000) // 5秒超时
   });
 
@@ -158,8 +152,21 @@ export const generateMockDeviceStatus = async (pondId?: number) => {
 
   const result = await response.json();
 
-  if (result.success && result.data) {
-    return result.data;
+  if (result.code === 200 && result.data && Array.isArray(result.data.devices)) {
+    return result.data.devices.map((item: any) => ({
+      id: String(item.device_id),
+      name: item.name,
+      type: item.category || 'unknown',
+      status: item.status === 'offline' ? '离线' : (item.is_running ? '运行中' : '在线'),
+      statusColor: item.status === 'offline' ? '#e74c3c' : '#20B2AA',
+      parameters: {
+        '分类': item.category_name || '-',
+        '运行状态': item.is_running_label || '-',
+        '位置': item.location || '-'
+      },
+      lastUpdate: Date.now(),
+      lastUpdateTime: new Date().toLocaleTimeString('ja-JP')
+    }));
   } else {
     throw new Error('API返回数据格式错误');
   }

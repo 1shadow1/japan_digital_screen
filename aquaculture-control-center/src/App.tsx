@@ -4,7 +4,8 @@ import CameraFeed from './components/CameraFeed';
 import AIDecisionChat from './components/AIDecisionChat';
 import DeviceStatus from './components/DeviceStatus';
 import LocationInfo from './components/LocationInfo';
-import { generateMockSensorData, generateMockAIMessages, generateMockDeviceStatus, generateMockLocationData } from './utils/mockData';
+import { generateMockDeviceStatus, generateMockLocationData } from './utils/mockData';
+import { createSSEConnection } from './utils/requestSSE';
 import './App.css';
 import MicRecorderButton from './components/MicRecorderButton';
 import AsrSubtitleOverlay from './components/AsrSubtitleOverlay';
@@ -27,9 +28,9 @@ interface PondListItem {
 const sensorTypeConfig: { [key: string]: { name: string; unit: string; color: string; threshold: [number, number] } } = {
   'temperature': { name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] },
   'ph': { name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] },
-  'oxygen': { name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] },
+  'do': { name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] },
   'turbidity': { name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] },
-  'level': { name: '水位', unit: 'm', color: '#00a8cc', threshold: [1.5, 3.0] },
+  'water_level': { name: '水位', unit: 'mm', color: '#00a8cc', threshold: [800, 1000] },
 };
 
 function App() {
@@ -40,7 +41,9 @@ function App() {
   const [aiMessages, setAiMessages] = useState<any[]>([]);
   const [deviceStatus, setDeviceStatus] = useState<any[]>([]);
   const [locationData, setLocationData] = useState<any[]>([]);
+  const [sensorPredictions, setSensorPredictions] = useState<Record<string, any>>({});
   const [cameraList, setCameraList] = useState<CameraListItem[]>([]);
+  const [cameraRefreshTriggers, setCameraRefreshTriggers] = useState<Record<number, number>>({});
   const [currentTime, setCurrentTime] = useState(new Date());
   const [asrPartialText, setAsrPartialText] = useState<string>('');
   const [asrFinalText, setAsrFinalText] = useState<string>('');
@@ -69,72 +72,8 @@ function App() {
     }
   };
 
-  // 获取摄像头列表
-  const fetchCameraList = async () => {
-    try {
-      const response = await fetch('/api/cameras/list', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        signal: AbortSignal.timeout(5000), // 5秒超时
-      });
-
-      if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data && Array.isArray(result.data)) {
-        console.log('摄像头列表API调用成功:', result);
-        setCameraList(result.data);
-      } else {
-        throw new Error('API返回数据格式错误');
-      }
-    } catch (error) {
-      console.error('获取摄像头列表失败:', error);
-      // 如果接口失败，使用默认的5个摄像头作为备用方案
-      setCameraList([
-        { id: 1 },
-        { id: 2 },
-        { id: 3 },
-        { id: 4 },
-        { id: 5 }
-      ]);
-    }
-  };
-
-  // 拉取所有业务数据（根据选中的养殖池）
-  const updateData = useCallback(async (pondId: number) => {
-    try {
-      const newSensorData = await generateMockSensorData([], pondId);
-      setSensorData(newSensorData);
-
-      if (newSensorData && typeof newSensorData === 'object' && !Array.isArray(newSensorData)) {
-        const detectedSensorIds = Object.keys(newSensorData);
-        const detectedSensorTypes = detectedSensorIds
-          .filter(sensorId => sensorTypeConfig[sensorId])
-          .map(sensorId => ({ id: sensorId, ...sensorTypeConfig[sensorId] }));
-
-        if (detectedSensorTypes.length > 0) {
-          setSensorTypes(detectedSensorTypes);
-        }
-      }
-    } catch (error) {
-      console.error('更新传感器数据失败:', error);
-      setSensorTypes(prev => prev.length > 0 ? prev : [
-        { id: 'temperature', name: '水温', unit: '°C', color: '#00a8cc', threshold: [18, 28] as [number, number] },
-        { id: 'ph', name: 'pH值', unit: 'pH', color: '#41b3d3', threshold: [6.5, 8.5] as [number, number] },
-        { id: 'oxygen', name: '溶解氧', unit: 'mg/L', color: '#20B2AA', threshold: [5, 12] as [number, number] },
-        { id: 'turbidity', name: '浊度', unit: 'NTU', color: '#41b3d3', threshold: [0, 50] as [number, number] },
-      ]);
-    }
-
-    generateMockAIMessages(pondId).then(newMessages => {
-      setAiMessages(prev => [...prev, ...newMessages].slice(-10));
-    }).catch(error => console.error('更新AI消息失败:', error));
-
+  // 拉取静态/不常变动的 REST 数据
+  const updateRestData = useCallback(async (pondId: number) => {
     generateMockDeviceStatus(pondId).then(newDeviceStatus => {
       setDeviceStatus(Array.isArray(newDeviceStatus) ? newDeviceStatus : []);
     }).catch(error => {
@@ -155,14 +94,160 @@ function App() {
     fetchPondList();
   }, []);
 
-  // 当养殖池选中后加载数据，切换时重新拉取
+  // 当养殖池选中后建立 SSE 连接和 REST 数据加载
   useEffect(() => {
     if (!selectedPondId) return;
-    updateData(selectedPondId);
-    fetchCameraList();
-    const interval = setInterval(() => updateData(selectedPondId), 3600000);
-    return () => clearInterval(interval);
-  }, [selectedPondId, updateData]);
+    
+    // 初始化并定时刷新 REST 数据 (设备状态、位置) 每小时一次
+    updateRestData(selectedPondId);
+    const interval = setInterval(() => updateRestData(selectedPondId), 3600000);
+
+    // 建立传感器 SSE 连接 (累积历史数据用于图表)
+    const cleanupSensors = createSSEConnection<any>({
+      url: `/api/v1/ponds/${selectedPondId}/sensors/realtime?stream=true`,
+      onMessage: (result) => {
+        // SSE 返回可能直接是载荷对象，而没有 code/data 包装
+        const payload = (result.code === 200 && result.data !== undefined) ? result.data : result;
+        
+        let items: any[] = [];
+        if (payload.sensors && Array.isArray(payload.sensors)) {
+          items = payload.sensors;
+        } else if (Array.isArray(payload)) {
+          items = payload;
+        } else if (payload.sensorId || payload.id) {
+          items = [payload];
+        }
+
+        if (items.length > 0) {
+          setSensorData(prevData => {
+            const newData = { ...prevData };
+            
+            items.forEach((item: any) => {
+              const sensorId = (item.metric ? item.metric.toLowerCase() : null) || item.sensorId || item.id || item.device_id;
+              if (!sensorId) return;
+              
+              if (!newData[sensorId]) {
+                newData[sensorId] = item.history_points ? item.history_points.map((p: any) => ({
+                  timestamp: p.timestamp,
+                  value: p.value,
+                  time: p.time || new Date(p.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+                })) : [];
+              }
+              
+              const ts = item.recorded_at ? new Date(item.recorded_at).getTime() : (item.timestamp || Date.now());
+              const timeStr = new Date(ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+              
+              const newPoint = { timestamp: ts, value: item.value, time: timeStr };
+              
+              // 仅当时间戳不重复时才推入，防止重复数据
+              const lastPoint = newData[sensorId][newData[sensorId].length - 1];
+              if (!lastPoint || lastPoint.timestamp !== newPoint.timestamp) {
+                newData[sensorId] = [...newData[sensorId], newPoint].slice(-50);
+              }
+
+              if (item.prediction) {
+                setSensorPredictions(prev => {
+                  if (prev[sensorId] === item.prediction) return prev;
+                  return { ...prev, [sensorId]: item.prediction };
+                });
+              }
+            });
+            return newData;
+          });
+
+          // 自动识别新出现的传感器类型
+          setSensorTypes(prev => {
+            const currentIds = new Set(prev.map(p => p.id));
+            const newIds = items.map((i: any) => (i.metric ? i.metric.toLowerCase() : null) || i.sensorId || i.id || i.device_id).filter((id: string) => id && !currentIds.has(id));
+            if (newIds.length === 0) return prev;
+            
+            const newTypes = newIds.filter((id: string) => sensorTypeConfig[id]).map((id: string) => ({ id, ...sensorTypeConfig[id] }));
+            if (newTypes.length === 0) return prev;
+            return [...prev, ...newTypes];
+          });
+        }
+      }
+    });
+
+    // 建立摄像头 SSE 连接 (获取设备列表及状态更新)
+    const cleanupCameras = createSSEConnection<any>({
+      url: `/api/v1/ponds/${selectedPondId}/cameras/realtime?stream=true`,
+      onMessage: (result) => {
+        const payload = (result.code === 200 && result.data !== undefined) ? result.data : result;
+        
+        let camerasArr: any[] = [];
+        if (payload.cameras && Array.isArray(payload.cameras)) {
+          camerasArr = payload.cameras;
+          setCameraList(payload.cameras);
+        } else if (Array.isArray(payload)) {
+          camerasArr = payload;
+          setCameraList(payload);
+        } else if (payload && (payload.id || payload.device_id || payload.camera_id)) {
+          camerasArr = [payload];
+          const actualId = payload.id || payload.device_id || payload.camera_id;
+          // 增量更新则合并
+          setCameraList(prev => {
+            const idx = prev.findIndex(c => (c.id || (c as any).device_id || (c as any).camera_id) === actualId);
+            if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = { ...next[idx], ...payload };
+              return next;
+            }
+            return [...prev, payload];
+          });
+        }
+
+        if (camerasArr.length > 0) {
+          setCameraRefreshTriggers(prev => {
+            const next = { ...prev };
+            camerasArr.forEach(c => {
+              const cid = c.id || c.device_id || c.camera_id;
+              if (cid !== undefined) next[cid] = Date.now();
+            });
+            return next;
+          });
+        }
+      }
+    });
+
+    // 建立 AI 决策 SSE 连接 (实时更新消息)
+    const cleanupAIDecisions = createSSEConnection<any>({
+      url: `/api/v1/ponds/${selectedPondId}/ai-decisions/realtime?stream=true`,
+      onMessage: (result) => {
+        const payload = (result.code === 200 && result.data !== undefined) ? result.data : result;
+        
+        // 尝试从不同的可能字段里提取数组，或直接作为增量消息
+        let items: any[] = [];
+        if (payload.messages && Array.isArray(payload.messages)) {
+          items = payload.messages;
+        } else if (payload.decisions && Array.isArray(payload.decisions)) {
+          items = payload.decisions;
+        } else if (payload.ai_decisions && Array.isArray(payload.ai_decisions)) {
+          items = payload.ai_decisions;
+        } else if (Array.isArray(payload)) {
+          items = payload;
+        } else if (payload.id || payload.message || payload.text) {
+          items = [payload];
+        }
+
+        if (items.length > 0) {
+          setAiMessages(prev => [...prev, ...items].slice(-10));
+        }
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      cleanupSensors();
+      cleanupCameras();
+      cleanupAIDecisions();
+      // 清空当前养殖池的实时数据状态，避免旧数据残余
+      setSensorData({});
+      setSensorPredictions({});
+      setAiMessages([]);
+      setCameraList([]);
+    };
+  }, [selectedPondId, updateRestData]);
 
   // 每秒更新头部时间显示
   useEffect(() => {
@@ -251,6 +336,7 @@ function App() {
                 key={sensor.id}
                 sensorType={sensor}
                 data={sensorData[sensor.id] || []}
+                prediction={sensorPredictions[sensor.id]}
               />
             ))
           )}
@@ -279,9 +365,10 @@ function App() {
                   <p>正在加载摄像头列表...</p>
                 </div>
               ) : (
-                cameraList.map((camera) => (
-                  <CameraFeed key={camera.id} cameraId={camera.id} />
-                ))
+                cameraList.map((camera: any, index: number) => {
+                  const currId = camera.id || camera.device_id || camera.camera_id || index;
+                  return <CameraFeed key={currId} pondId={selectedPondId} camera={camera} refreshTrigger={cameraRefreshTriggers[currId] || 0} />;
+                })
               )}
             </div>
           </section>

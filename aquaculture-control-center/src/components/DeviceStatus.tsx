@@ -19,7 +19,7 @@ interface DeviceStatusProps {
 // 判断设备是否在线（仅 online / 运行中 视为在线，其余均归为离线）
 const isDeviceOnline = (device: Device) => {
   const s = (device.status || '').toLowerCase();
-  return s === 'online' || device.status === '运行中';
+  return s === 'online' || device.status === '运行中' || device.status === '在线';
 };
 
 const FAULT_STATUS_COLOR = '#e74c3c';

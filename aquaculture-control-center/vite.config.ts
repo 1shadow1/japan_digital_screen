@@ -41,6 +41,16 @@ export default defineConfig({
         target: "http://8.216.43.146:5002",
         changeOrigin: true,
         secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyRes', (proxyRes, _req, _res) => {
+            if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+              // no-transform 让 compression 中间件跳过 gzip，避免缓冲 SSE
+              proxyRes.headers['cache-control'] = 'no-transform';
+              proxyRes.headers['x-accel-buffering'] = 'no';
+              delete proxyRes.headers['content-encoding'];
+            }
+          });
+        }
       },
     },
   },
