@@ -92,7 +92,23 @@ const AIDecisionChat: React.FC<AIDecisionChatProps> = ({ messages }) => {
 
                 {/* 消息内容 */}
                 <div className="message-content">
-                  <p className="message-text">{message.message}</p>
+                  {message.message.split('\n').map((line, idx) => {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) return null;
+
+                    const lowerLine = trimmedLine.toLowerCase();
+                    if (lowerLine.startsWith('[p0]')) {
+                      return <span key={idx} className="priority-line p0">{trimmedLine}</span>;
+                    }
+                    if (lowerLine.startsWith('[p1]')) {
+                      return <span key={idx} className="priority-line p1">{trimmedLine}</span>;
+                    }
+                    if (lowerLine.startsWith('[p2]')) {
+                      return <span key={idx} className="priority-line p2">{trimmedLine}</span>;
+                    }
+                    return <p key={idx} className="message-text">{line}</p>;
+                  })}
+                  
                   {message.action && (
                     <div className="action-taken">
                       <div className="action-icon">⚡</div>
